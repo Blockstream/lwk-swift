@@ -8,5 +8,5 @@ Pod::Spec.new do |spec|
     spec.documentation_url      = "https://docs.rs/lwk_bindings"
     spec.source                 = { :http => "https://github.com/lvaccaro/lwk-swift/releases/download/0.7.0/lwkFFI.xcframework.zip" }
     spec.ios.deployment_target  = "14.0"
-    spec.ios.vendored_frameworks    = "lwkFFI.xcframework"
+    spec.vendored_frameworks    = "lwkFFI.xcframework"
   end
