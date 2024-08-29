@@ -6,7 +6,7 @@ Pod::Spec.new do |spec|
     spec.homepage               = "https://blockstream.com"
     spec.authors                = { "Riccardo Casatta" => "riccardo@casatta.it", "Luca Vaccaro" => "me@lvaccaro.com" }
     spec.documentation_url      = "https://docs.rs/lwk_bindings"
-    spec.source                 = { :http => "https://github.com/Blockstream/lwk-swift/releases/download/test/lwkFFI.xcframework.zip" }
+    spec.source                 = { :http => "https://github.com/lvaccaro/lwk-swift/releases/download/#{spec.version}/lwkFFI.xcframework.zip" }
     spec.ios.deployment_target  = "14.0"
     spec.vendored_frameworks    = "lwkFFI.xcframework"
   end
