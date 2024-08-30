@@ -13,6 +13,9 @@ on:
     branches:
       - main
 
+env:
+  VERSION: 0.7.0
+      
 jobs:
   build-tag-release:
     name: Build, tag, and release the Breez SDK Swift bindings
@@ -50,25 +53,25 @@ jobs:
       - name: Update Cocoapods definitions
         working-directory: dist
         run: |
-          sed -i '' 's#^.\{2\}spec.version.*$#  spec.version                = "${{ inputs.version }}"#' lwkFFI.podspec
-          sed -i '' 's#^.\{2\}spec.version.*$#  spec.version                = "${{ inputs.version }}"#' LiquidWalletKit.podspec
+          sed -i '' 's#^.\{2\}spec.version.*$#  spec.version                = "$VERSION"#' lwkFFI.podspec
+          sed -i '' 's#^.\{2\}spec.version.*$#  spec.version                = "$VERSION"#' LiquidWalletKit.podspec
       - name: Tag the Swift bindings
         run: |
           git add Package.swift
           git add Sources
           git add lwkFFI.podspec
           git add LiquidWalletKit.podspec
-          git commit -m "Bump Liquid Wallet Kit to version ${{ inputs.version }}"
+          git commit -m "Bump Liquid Wallet Kit to version $VERSION"
           git push
-          git tag ${{ inputs.version }} -m "${{ inputs.version }}"
+          git tag $VERSION -m "$VERSION"
           git push --tags
       - name: Release and attach XCFramework binary artifact
         uses: ncipollo/release-action@v1
         with:
           artifacts: "build/libs/sdk-bindings/bindings-swift/breez_sdkFFI.xcframework.zip"
-          tag: ${{ inputs.version }}
+          tag: $VERSION
           token: ${{ secrets.GITHUB_TOKEN }}
-          name: ${{ inputs.version }}
+          name: $VERSION
           prerelease: true
       - name: Push update to Cocoapods trunk
         working-directory: dist
