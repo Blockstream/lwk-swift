@@ -6,8 +6,8 @@ Pod::Spec.new do |spec|
     spec.homepage               = "https://blockstream.com"
     spec.authors                = { "Riccardo Casatta" => "riccardo@casatta.it", "Luca Vaccaro" => "me@lvaccaro.com" }
     spec.documentation_url      = "https://docs.rs/lwk_bindings"
-    spec.source                 = { :git => 'https://github.com/lvaccaro/lwk-swift.git', :tag => spec.version }
-    spec.ios.deployment_target  = "14.0"
+    spec.source                 = { :git => 'https://github.com/Blockstream/lwk-swift.git', :tag => spec.version }
+    spec.ios.deployment_target  = "13.0"
     spec.source_files           = [
       "Sources/LiquidWalletKit/*.swift", 
       "Sources/LiquidWalletKit/**/*.swift"

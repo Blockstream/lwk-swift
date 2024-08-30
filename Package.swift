@@ -7,7 +7,7 @@ let package = Package(
     name: "lwk_bindings",
     platforms: [
         .macOS(.v12),
-        .iOS(.v11),
+        .iOS(.v13),
     ],
     products: [
         .library(name: "LiquidWalletKit", targets: ["lwkFFI", "LiquidWalletKit"]),
