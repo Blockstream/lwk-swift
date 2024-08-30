@@ -6,6 +6,12 @@ on:
         description: 'LWK repo release (MAJOR.MINOR.PATCH)'
         required: true
         type: string
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build-tag-release:
