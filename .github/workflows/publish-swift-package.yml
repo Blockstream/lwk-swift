@@ -45,13 +45,14 @@ jobs:
         run: |
           echo "RELEASE_REF=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
           echo "VERSION=$(echo ${{ env.RELEASE_REF }} | sed 's/bindings_//')" >> $GITHUB_ENV
+          echo "New tag: ${{ env.VERSION }}"
       - name: Update Swift Package definition
         run: |
-          sed -i '' 's#.binaryTarget(name: "lwkFFI".*$#.binaryTarget(name: "lwkFFI", url: "https://github.com/Blockstream/lwk-swift/releases/download/${{ inputs.version }}/lwkFFI.xcframework.zip", checksum: "${{ env.XCF_CHECKSUM }}"),#' Package.swift
+          sed -i '' 's#.binaryTarget(name: "lwkFFI".*$#.binaryTarget(name: "lwkFFI", url: "https://github.com/Blockstream/lwk-swift/releases/download/${{ env.VERSION }}/lwkFFI.xcframework.zip", checksum: "${{ env.XCF_CHECKSUM }}"),#' Package.swift
       - name: Update Cocoapods definitions
         run: |
           sed  -i '' 's/^.\{4\}spec.version.*$/    spec.version                = "${{ env.VERSION }}"/g' lwkFFI.podspec
-          sed  -i '' 's/^.\{4\}spec.source.*$/     spec.source                = { :http => "https://github.com/Blockstream/lwk-swift/releases/download/${{ inputs.version }}/lwkFFI.xcframework.zip" }/g' lwkFFI.podspec
+          sed  -i '' 's/^.\{4\}spec.source.*$/     spec.source                = { :http => "https://github.com/Blockstream/lwk-swift/releases/download/${{ env.VERSION }}/lwkFFI.xcframework.zip" }/g' lwkFFI.podspec
           sed  -i '' 's/^.\{4\}spec.version.*$/    spec.version                = "${{ env.VERSION }}"/g' LiquidWalletKit.podspec
       - name: Tag the Swift bindings
         run: |
