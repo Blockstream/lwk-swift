@@ -17,16 +17,16 @@ jobs:
         with:
           targets: x86_64-apple-ios,aarch64-apple-ios,aarch64-apple-ios-sim
       - name: Setup just
-        uses: extractions/setup-just@v1
+        uses: extractions/setup-just@v2
         with:
           just-version: 1.5.0  # optional semver specification, otherwise latest
       - name: Checkout lwk-swift repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: Blockstream/lwk-swift
           ref: main
       - name: Checkout lwk repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: Blockstream/lwk
           ref: ${{ inputs.version }}
