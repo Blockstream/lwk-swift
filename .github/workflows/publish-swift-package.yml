@@ -20,7 +20,6 @@ jobs:
       - name: Version
         run: |
           echo "New tag: ${VERSION}"
-      
       - name: Setup rust toolchain
         uses: dtolnay/rust-toolchain@1.75.0
         with:
@@ -40,9 +39,6 @@ jobs:
           repository: Blockstream/lwk
           ref: ${{ inputs.version }}
           path: build
-      - run: |
-          envsubst <templates/lwkFFI.podspec >lwkFFI.podspec
-          envsubst <templates/LiquidWalletKit.podspec >LiquidWalletKit.podspec
       - name: Build Swift bindings
         working-directory: build
         run: just swift
@@ -51,9 +47,10 @@ jobs:
         run: |
           zip -9 -r target/lwkFFI.xcframework.zip target/lwkFFI.xcframework
           echo "XCF_CHECKSUM=`swift package compute-checksum lwkFFI.xcframework.zip`" >> $GITHUB_ENV
-      - name: LS
-        run: ls
-      - run: |
+      - name: Create package files from templates
+        run: |
+          envsubst <templates/lwkFFI.podspec >lwkFFI.podspec
+          envsubst <templates/LiquidWalletKit.podspec >LiquidWalletKit.podspec
           envsubst <templates/Package.swift >Package.swift
       - name: Tag the Swift bindings
         run: |
@@ -69,9 +66,9 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           artifacts: "build/target/lwkFFI.xcframework.zip"
-          tag: ${VERSION}
+          tag: ${{ env.VERSION }}
           token: ${{ secrets.GITHUB_TOKEN }}
-          name: ${VERSION}
+          name: ${{ env.VERSION }}
           prerelease: true
       - name: Push update to Cocoapods trunk
         env:
