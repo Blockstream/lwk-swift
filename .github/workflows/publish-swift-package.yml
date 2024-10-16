@@ -12,6 +12,14 @@ jobs:
     name: Build, tag, and release the LWK SDK Swift bindings
     runs-on: macos-14
     steps:
+      - name: ENV
+        run: env
+      - name: Set release version
+        run: |
+          echo "VERSION=$(echo ${{ inputs.version }} | sed 's/bindings_//')" >> $GITHUB_ENV
+      - name: Version
+        run: |
+          echo "New tag: ${VERSION}"
       - name: Setup rust toolchain
         uses: dtolnay/rust-toolchain@1.75.0
         with:
@@ -41,38 +49,31 @@ jobs:
           echo "XCF_CHECKSUM=`swift package compute-checksum lwkFFI.xcframework.zip`" >> $GITHUB_ENV
       - name: LS
         run: ls
-      - name: Set release version
-        run: |
-          echo "RELEASE_REF=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-          echo "VERSION=$(echo ${{ env.RELEASE_REF }} | sed 's/bindings_//')" >> $GITHUB_ENV
-      - name: Version
-        run: |
-          echo "New tag: ${{ env.VERSION }}"
       - name: Update Swift Package definition
         run: |
-          sed -i '' 's#.binaryTarget(name: "lwkFFI".*$#.binaryTarget(name: "lwkFFI", url: "https://github.com/Blockstream/lwk-swift/releases/download/${{ env.VERSION }}/lwkFFI.xcframework.zip", checksum: "${{ env.XCF_CHECKSUM }}"),#' Package.swift
+          sed -i '' 's#.binaryTarget(name: "lwkFFI".*$#.binaryTarget(name: "lwkFFI", url: "https://github.com/Blockstream/lwk-swift/releases/download/${VERSION}/lwkFFI.xcframework.zip", checksum: "${{ env.XCF_CHECKSUM }}"),#' Package.swift
       - name: Update Cocoapods definitions
         run: |
-          sed  -i 's/^.\{4\}spec.version.*$/    spec.version                = "${{ env.VERSION }}"/g' lwkFFI.podspec
-          sed  -i 's/^.\{4\}spec.source.*$/     spec.source                = { :http => "https://github.com/Blockstream/lwk-swift/releases/download/${{ env.VERSION }}/lwkFFI.xcframework.zip" }/g' lwkFFI.podspec
-          sed  -i 's/^.\{4\}spec.version.*$/    spec.version                = "${{ env.VERSION }}"/g' LiquidWalletKit.podspec
+          sed -i '' 's/^.\{4\}spec.version.*$/    spec.version                = "${VERSION}"/g' lwkFFI.podspec
+          sed -i '' 's/^.\{4\}spec.source.*$/     spec.source                = { :http => "https://github.com/Blockstream/lwk-swift/releases/download/${VERSION}/lwkFFI.xcframework.zip" }/g' lwkFFI.podspec
+          sed -i '' 's/^.\{4\}spec.version.*$/    spec.version                = "${VERSION}"/g' LiquidWalletKit.podspec
       - name: Tag the Swift bindings
         run: |
           git add Package.swift
           git add Sources
           git add lwkFFI.podspec
           git add LiquidWalletKit.podspec
-          git commit -m "Bump Liquid Wallet Kit to version ${{ env.VERSION }}"
+          git commit -m "Bump Liquid Wallet Kit to version ${VERSION}"
           git push
-          git tag ${{ env.VERSION }} -m "${{ env.VERSION }}"
+          git tag ${VERSION} -m "${VERSION}"
           git push --tags
       - name: Release and attach XCFramework binary artifact
         uses: ncipollo/release-action@v1
         with:
           artifacts: "build/target/lwkFFI.xcframework.zip"
-          tag: ${{ env.VERSION }}
+          tag: ${VERSION}
           token: ${{ secrets.GITHUB_TOKEN }}
-          name: ${{ env.VERSION }}
+          name: ${VERSION}
           prerelease: true
       - name: Push update to Cocoapods trunk
         env:
