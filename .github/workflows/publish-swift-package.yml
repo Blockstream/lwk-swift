@@ -20,10 +20,7 @@ jobs:
       - name: Version
         run: |
           echo "New tag: ${VERSION}"
-      - run: brew install gettext # for envsubst
-      - run: |
-          envsubst <templates/lwkFFI.podspec >lwkFFI.podspec
-          envsubst <templates/LiquidWalletKit.podspec >LiquidWalletKit.podspec
+      
       - name: Setup rust toolchain
         uses: dtolnay/rust-toolchain@1.75.0
         with:
@@ -43,6 +40,9 @@ jobs:
           repository: Blockstream/lwk
           ref: ${{ inputs.version }}
           path: build
+      - run: |
+          envsubst <templates/lwkFFI.podspec >lwkFFI.podspec
+          envsubst <templates/LiquidWalletKit.podspec >LiquidWalletKit.podspec
       - name: Build Swift bindings
         working-directory: build
         run: just swift
