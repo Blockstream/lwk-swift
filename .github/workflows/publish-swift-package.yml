@@ -59,6 +59,7 @@ jobs:
           git add Package.swift Sources lwkFFI.podspec LiquidWalletKit.podspec
           git commit -m "Bump Liquid Wallet Kit to version ${VERSION}"
           git tag ${VERSION} -m "${VERSION}"
+          git push
           git push --tags
       - name: Release and attach XCFramework binary artifact
         uses: ncipollo/release-action@v1
