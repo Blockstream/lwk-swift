@@ -20,14 +20,10 @@ jobs:
       - name: Version
         run: |
           echo "New tag: ${VERSION}"
-      - uses: danielr1996/envsubst-action@1.0.0 # mac doesn't have envsubst
-        with:
-          input: templates/LiquidWalletKit.podspec
-          output: LiquidWalletKit.podspec
-      - uses: danielr1996/envsubst-action@1.0.0 
-        with:
-          input: templates/lwkFFI.podspec
-          output: lwkFFI.podspec
+      - run: brew install gettext # for envsubst
+      - run: |
+          envsubst <templates/lwkFFI.podspec >lwkFFI.podspec
+          envsubst <templates/LiquidWalletKit.podspec >LiquidWalletKit.podspec
       - name: Setup rust toolchain
         uses: dtolnay/rust-toolchain@1.75.0
         with:
@@ -57,10 +53,8 @@ jobs:
           echo "XCF_CHECKSUM=`swift package compute-checksum lwkFFI.xcframework.zip`" >> $GITHUB_ENV
       - name: LS
         run: ls
-      - uses: danielr1996/envsubst-action@1.0.0 
-        with:
-          input: templates/Package.swift
-          output: Package.swift
+      - run: |
+          envsubst <templates/Package.swift >Package.swift
       - name: Tag the Swift bindings
         run: |
           git add Package.swift
