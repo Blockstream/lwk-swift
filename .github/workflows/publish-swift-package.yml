@@ -20,6 +20,14 @@ jobs:
       - name: Version
         run: |
           echo "New tag: ${VERSION}"
+      - uses: danielr1996/envsubst-action@1.0.0 # mac doesn't have envsubst
+        with:
+          input: templates/LiquidWalletKit.podspec
+          output: LiquidWalletKit.podspec
+      - uses: danielr1996/envsubst-action@1.0.0 
+        with:
+          input: templates/lwkFFI.podspec
+          output: lwkFFI.podspec
       - name: Setup rust toolchain
         uses: dtolnay/rust-toolchain@1.75.0
         with:
@@ -49,14 +57,10 @@ jobs:
           echo "XCF_CHECKSUM=`swift package compute-checksum lwkFFI.xcframework.zip`" >> $GITHUB_ENV
       - name: LS
         run: ls
-      - name: Update Swift Package definition
-        run: |
-          sed -i '' "s#.binaryTarget(name: \"lwkFFI\".*$#.binaryTarget(name: \"lwkFFI\", url: \"https://github.com/Blockstream/lwk-swift/releases/download/${VERSION}/lwkFFI.xcframework.zip\", checksum: \"${XCF_CHECKSUM}\"),#" Package.swift
-      - name: Update Cocoapods definitions
-        run: |
-          sed -i '' "s/^.\{4\}spec.version.*$/    spec.version                = \"${VERSION}\"/g" lwkFFI.podspec
-          sed -i '' "s/^.\{4\}spec.source.*$/     spec.source                = { :http => \"https://github.com/Blockstream/lwk-swift/releases/download/${VERSION}/lwkFFI.xcframework.zip\" }/g" lwkFFI.podspec
-          sed -i '' "s/^.\{4\}spec.version.*$/    spec.version                = \"${VERSION}\"/g" LiquidWalletKit.podspec
+      - uses: danielr1996/envsubst-action@1.0.0 
+        with:
+          input: templates/Package.swift
+          output: Package.swift
       - name: Tag the Swift bindings
         run: |
           git add Package.swift
