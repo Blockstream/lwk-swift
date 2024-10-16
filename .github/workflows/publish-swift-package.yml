@@ -51,12 +51,12 @@ jobs:
         run: ls
       - name: Update Swift Package definition
         run: |
-          sed -i '' 's#.binaryTarget(name: "lwkFFI".*$#.binaryTarget(name: "lwkFFI", url: "https://github.com/Blockstream/lwk-swift/releases/download/${VERSION}/lwkFFI.xcframework.zip", checksum: "${{ env.XCF_CHECKSUM }}"),#' Package.swift
+          sed -i '' "s#.binaryTarget(name: \"lwkFFI\".*$#.binaryTarget(name: \"lwkFFI\", url: \"https://github.com/Blockstream/lwk-swift/releases/download/${VERSION}/lwkFFI.xcframework.zip\", checksum: \"${XCF_CHECKSUM}\"),#" Package.swift
       - name: Update Cocoapods definitions
         run: |
-          sed -i '' 's/^.\{4\}spec.version.*$/    spec.version                = "${VERSION}"/g' lwkFFI.podspec
-          sed -i '' 's/^.\{4\}spec.source.*$/     spec.source                = { :http => "https://github.com/Blockstream/lwk-swift/releases/download/${VERSION}/lwkFFI.xcframework.zip" }/g' lwkFFI.podspec
-          sed -i '' 's/^.\{4\}spec.version.*$/    spec.version                = "${VERSION}"/g' LiquidWalletKit.podspec
+          sed -i '' "s/^.\{4\}spec.version.*$/    spec.version                = \"${VERSION}\"/g" lwkFFI.podspec
+          sed -i '' "s/^.\{4\}spec.source.*$/     spec.source                = { :http => \"https://github.com/Blockstream/lwk-swift/releases/download/${VERSION}/lwkFFI.xcframework.zip\" }/g" lwkFFI.podspec
+          sed -i '' "s/^.\{4\}spec.version.*$/    spec.version                = \"${VERSION}\"/g" LiquidWalletKit.podspec
       - name: Tag the Swift bindings
         run: |
           git add Package.swift

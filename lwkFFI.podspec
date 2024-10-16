@@ -1,6 +1,6 @@
 Pod::Spec.new do |spec|
     spec.name                   = "lwkFFI"
-    spec.version                = "bindings_0.8.2"
+    spec.version                = "0.8.2"
     spec.license                = { :type => "MIT OR BSD-2-Clause" }
     spec.summary                = "Low-level bindings to the Liquid Wallet Kit Rust API"
     spec.homepage               = "https://blockstream.com"
