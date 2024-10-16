@@ -49,6 +49,9 @@ jobs:
           cd target
           zip -9 -r lwkFFI.xcframework.zip lwkFFI.xcframework
           echo "XCF_CHECKSUM=`swift package compute-checksum lwkFFI.xcframework.zip`" >> $GITHUB_ENV
+      - name: Checksum
+        run: |
+          echo "XCF_CHECKSUM: ${XCF_CHECKSUM}"
       - name: Create package files from templates
         run: |
           envsubst <templates/lwkFFI.podspec >lwkFFI.podspec
