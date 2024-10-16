@@ -54,12 +54,8 @@ jobs:
           envsubst <templates/Package.swift >Package.swift
       - name: Tag the Swift bindings
         run: |
-          git add Package.swift
-          git add Sources
-          git add lwkFFI.podspec
-          git add LiquidWalletKit.podspec
+          git add Package.swift Sources lwkFFI.podspec LiquidWalletKit.podspec
           git commit -m "Bump Liquid Wallet Kit to version ${VERSION}"
-          git push
           git tag ${VERSION} -m "${VERSION}"
           git push --tags
       - name: Release and attach XCFramework binary artifact
