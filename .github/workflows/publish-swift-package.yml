@@ -24,7 +24,6 @@ jobs:
         uses: dtolnay/rust-toolchain@1.75.0
         with:
           targets: x86_64-apple-ios,aarch64-apple-ios,aarch64-apple-ios-sim
-      - uses: Swatinem/rust-cache@v2
       - name: Setup just
         uses: extractions/setup-just@v2
         with:
@@ -40,6 +39,7 @@ jobs:
           repository: Blockstream/lwk
           ref: ${{ inputs.version }}
           path: build
+      - uses: Swatinem/rust-cache@v2
       - name: Build Swift bindings
         working-directory: build
         run: just swift
