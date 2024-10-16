@@ -46,7 +46,8 @@ jobs:
       - name: Compress XCFramework
         working-directory: build
         run: |
-          zip -9 -r target/lwkFFI.xcframework.zip target/lwkFFI.xcframework
+          cd target
+          zip -9 -r lwkFFI.xcframework.zip lwkFFI.xcframework
           echo "XCF_CHECKSUM=`swift package compute-checksum lwkFFI.xcframework.zip`" >> $GITHUB_ENV
       - name: Create package files from templates
         run: |
