@@ -57,6 +57,9 @@ jobs:
           envsubst <templates/lwkFFI.podspec >lwkFFI.podspec
           envsubst <templates/LiquidWalletKit.podspec >LiquidWalletKit.podspec
           envsubst <templates/Package.swift >Package.swift
+      - name: Copy sources
+        run: |
+          cp build/target/swift/lwk.swift Sources/LiquidWalletKit/LiquidWalletKit.swift
       - name: Tag the Swift bindings
         run: |
           git add Package.swift Sources lwkFFI.podspec LiquidWalletKit.podspec
