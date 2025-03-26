@@ -2043,7 +2043,13 @@ public func FfiConverterTypeForeignPersisterLink_lower(_ value: ForeignPersister
 public protocol IssuanceProtocol: AnyObject {
     func asset() -> AssetId?
 
+    func assetSatoshi() -> UInt64?
+
+    func isConfidential() -> Bool
+
     func isIssuance() -> Bool
+
+    func isNull() -> Bool
 
     func isReissuance() -> Bool
 
@@ -2052,6 +2058,8 @@ public protocol IssuanceProtocol: AnyObject {
     func prevVout() -> UInt32?
 
     func token() -> AssetId?
+
+    func tokenSatoshi() -> UInt64?
 }
 
 open class Issuance:
@@ -2109,9 +2117,27 @@ open class Issuance:
         })
     }
 
+    open func assetSatoshi() -> UInt64? {
+        return try! FfiConverterOptionUInt64.lift(try! rustCall {
+            uniffi_lwk_fn_method_issuance_asset_satoshi(self.uniffiClonePointer(), $0)
+        })
+    }
+
+    open func isConfidential() -> Bool {
+        return try! FfiConverterBool.lift(try! rustCall {
+            uniffi_lwk_fn_method_issuance_is_confidential(self.uniffiClonePointer(), $0)
+        })
+    }
+
     open func isIssuance() -> Bool {
         return try! FfiConverterBool.lift(try! rustCall {
             uniffi_lwk_fn_method_issuance_is_issuance(self.uniffiClonePointer(), $0)
+        })
+    }
+
+    open func isNull() -> Bool {
+        return try! FfiConverterBool.lift(try! rustCall {
+            uniffi_lwk_fn_method_issuance_is_null(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -2136,6 +2162,12 @@ open class Issuance:
     open func token() -> AssetId? {
         return try! FfiConverterOptionTypeAssetId.lift(try! rustCall {
             uniffi_lwk_fn_method_issuance_token(self.uniffiClonePointer(), $0)
+        })
+    }
+
+    open func tokenSatoshi() -> UInt64? {
+        return try! FfiConverterOptionUInt64.lift(try! rustCall {
+            uniffi_lwk_fn_method_issuance_token_satoshi(self.uniffiClonePointer(), $0)
         })
     }
 }
@@ -3204,6 +3236,11 @@ public func FfiConverterTypePsetDetails_lower(_ value: PsetDetails) -> UnsafeMut
  */
 public protocol PsetInputProtocol: AnyObject {
     /**
+     * If the input has a (re)issuance, the issuance object
+     */
+    func issuance() -> Issuance?
+
+    /**
      * If the input has an issuance, the asset id
      */
     func issuanceAsset() -> AssetId?
@@ -3284,6 +3321,15 @@ open class PsetInput:
         }
 
         try! rustCall { uniffi_lwk_fn_free_psetinput(pointer, $0) }
+    }
+
+    /**
+     * If the input has a (re)issuance, the issuance object
+     */
+    open func issuance() -> Issuance? {
+        return try! FfiConverterOptionTypeIssuance.lift(try! rustCall {
+            uniffi_lwk_fn_method_psetinput_issuance(self.uniffiClonePointer(), $0)
+        })
     }
 
     /**
@@ -6373,6 +6419,30 @@ private struct FfiConverterOptionTypeContract: FfiConverterRustBuffer {
 #if swift(>=5.8)
     @_documentation(visibility: private)
 #endif
+private struct FfiConverterOptionTypeIssuance: FfiConverterRustBuffer {
+    typealias SwiftType = Issuance?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeIssuance.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeIssuance.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
 private struct FfiConverterOptionTypeScript: FfiConverterRustBuffer {
     typealias SwiftType = Script?
 
@@ -7039,7 +7109,16 @@ private var initializationResult: InitializationResult = {
     if uniffi_lwk_checksum_method_issuance_asset() != 59545 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_lwk_checksum_method_issuance_asset_satoshi() != 13924 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_lwk_checksum_method_issuance_is_confidential() != 28108 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_lwk_checksum_method_issuance_is_issuance() != 36847 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_lwk_checksum_method_issuance_is_null() != 41097 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_lwk_checksum_method_issuance_is_reissuance() != 19752 {
@@ -7052,6 +7131,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_lwk_checksum_method_issuance_token() != 31197 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_lwk_checksum_method_issuance_token_satoshi() != 10642 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_lwk_checksum_method_network_default_electrum_client() != 57493 {
@@ -7106,6 +7188,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_lwk_checksum_method_psetdetails_signatures() != 49463 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_lwk_checksum_method_psetinput_issuance() != 24131 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_lwk_checksum_method_psetinput_issuance_asset() != 63028 {
