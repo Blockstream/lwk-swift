@@ -10,7 +10,7 @@ on:
 jobs:
   build-tag-release:
     name: Build, tag, and release the LWK SDK Swift bindings
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - name: ENV
         run: env
@@ -21,7 +21,7 @@ jobs:
         run: |
           echo "New tag: ${VERSION}"
       - name: Setup rust toolchain
-        uses: dtolnay/rust-toolchain@1.81.0
+        uses: dtolnay/rust-toolchain@1.85.0
         with:
           targets: x86_64-apple-ios,aarch64-apple-ios,aarch64-apple-ios-sim
       - name: Setup just
