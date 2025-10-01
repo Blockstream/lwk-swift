@@ -1,6 +1,6 @@
 Pod::Spec.new do |spec|
     spec.name                   = "LiquidWalletKit"
-    spec.version                = "0.9.1"
+    spec.version                = "0.12.0"
     spec.license                = { :type => "MIT OR BSD-2-Clause" }
     spec.summary                = "Swift bindings to the Liquid Wallet Kit"
     spec.homepage               = "https://blockstream.com"
