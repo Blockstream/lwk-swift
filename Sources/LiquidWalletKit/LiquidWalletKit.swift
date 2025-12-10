@@ -2529,6 +2529,143 @@ public func FfiConverterTypeBip_lower(_ value: Bip) -> UnsafeMutableRawPointer {
 
 
 /**
+ * A valid Bitcoin address
+ */
+public protocol BitcoinAddressProtocol : AnyObject {
+    
+}
+
+/**
+ * A valid Bitcoin address
+ */
+open class BitcoinAddress:
+    CustomStringConvertible,
+    BitcoinAddressProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_lwk_fn_clone_bitcoinaddress(self.pointer, $0) }
+    }
+    /**
+     * Construct an Address object
+     */
+public convenience init(s: String)throws  {
+    let pointer =
+        try rustCallWithError(FfiConverterTypeLwkError.lift) {
+    uniffi_lwk_fn_constructor_bitcoinaddress_new(
+        FfiConverterString.lower(s),$0
+    )
+}
+    self.init(unsafeFromRawPointer: pointer)
+}
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_lwk_fn_free_bitcoinaddress(pointer, $0) }
+    }
+
+    
+
+    
+    open var description: String {
+        return try!  FfiConverterString.lift(
+            try! rustCall() {
+    uniffi_lwk_fn_method_bitcoinaddress_uniffi_trait_display(self.uniffiClonePointer(),$0
+    )
+}
+        )
+    }
+
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeBitcoinAddress: FfiConverter {
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = BitcoinAddress
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> BitcoinAddress {
+        return BitcoinAddress(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: BitcoinAddress) -> UnsafeMutableRawPointer {
+        return value.uniffiClonePointer()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BitcoinAddress {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: BitcoinAddress, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeBitcoinAddress_lift(_ pointer: UnsafeMutableRawPointer) throws -> BitcoinAddress {
+    return try FfiConverterTypeBitcoinAddress.lift(pointer)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeBitcoinAddress_lower(_ value: BitcoinAddress) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeBitcoinAddress.lower(value)
+}
+
+
+
+
+/**
  * Wrapper over [`elements::BlockHeader`]
  */
 public protocol BlockHeaderProtocol : AnyObject {
@@ -3019,7 +3156,7 @@ public protocol BoltzSessionProtocol : AnyObject {
     /**
      * Create an onchain swap to convert BTC to LBTC
      */
-    func btcToLbtc(amount: UInt64, refundAddress: String, claimAddress: Address, webhook: WebHook?) throws  -> LockupResponse
+    func btcToLbtc(amount: UInt64, refundAddress: BitcoinAddress, claimAddress: Address, webhook: WebHook?) throws  -> LockupResponse
     
     /**
      * Fetch informations, such as min and max amounts, about the reverse and submarine pairs from the boltz api.
@@ -3034,7 +3171,7 @@ public protocol BoltzSessionProtocol : AnyObject {
     /**
      * Create an onchain swap to convert LBTC to BTC
      */
-    func lbtcToBtc(amount: UInt64, refundAddress: Address, claimAddress: String, webhook: WebHook?) throws  -> LockupResponse
+    func lbtcToBtc(amount: UInt64, refundAddress: Address, claimAddress: BitcoinAddress, webhook: WebHook?) throws  -> LockupResponse
     
     /**
      * Get the next index to use for deriving keypairs
@@ -3181,11 +3318,11 @@ public static func fromBuilder(builder: BoltzSessionBuilder)throws  -> BoltzSess
     /**
      * Create an onchain swap to convert BTC to LBTC
      */
-open func btcToLbtc(amount: UInt64, refundAddress: String, claimAddress: Address, webhook: WebHook?)throws  -> LockupResponse {
+open func btcToLbtc(amount: UInt64, refundAddress: BitcoinAddress, claimAddress: Address, webhook: WebHook?)throws  -> LockupResponse {
     return try  FfiConverterTypeLockupResponse.lift(try rustCallWithError(FfiConverterTypeLwkError.lift) {
     uniffi_lwk_fn_method_boltzsession_btc_to_lbtc(self.uniffiClonePointer(),
         FfiConverterUInt64.lower(amount),
-        FfiConverterString.lower(refundAddress),
+        FfiConverterTypeBitcoinAddress.lower(refundAddress),
         FfiConverterTypeAddress.lower(claimAddress),
         FfiConverterOptionTypeWebHook.lower(webhook),$0
     )
@@ -3219,12 +3356,12 @@ open func invoice(amount: UInt64, description: String?, claimAddress: Address, w
     /**
      * Create an onchain swap to convert LBTC to BTC
      */
-open func lbtcToBtc(amount: UInt64, refundAddress: Address, claimAddress: String, webhook: WebHook?)throws  -> LockupResponse {
+open func lbtcToBtc(amount: UInt64, refundAddress: Address, claimAddress: BitcoinAddress, webhook: WebHook?)throws  -> LockupResponse {
     return try  FfiConverterTypeLockupResponse.lift(try rustCallWithError(FfiConverterTypeLwkError.lift) {
     uniffi_lwk_fn_method_boltzsession_lbtc_to_btc(self.uniffiClonePointer(),
         FfiConverterUInt64.lower(amount),
         FfiConverterTypeAddress.lower(refundAddress),
-        FfiConverterString.lower(claimAddress),
+        FfiConverterTypeBitcoinAddress.lower(claimAddress),
         FfiConverterOptionTypeWebHook.lower(webhook),$0
     )
 })
@@ -4577,13 +4714,25 @@ public protocol InvoiceResponseProtocol : AnyObject {
     
     func bolt11Invoice() throws  -> Bolt11Invoice
     
-    func completePay() throws  -> Bool
-    
     /**
      * The fee of the swap provider
      *
+     * It is equal to the invoice amount multiplied by the boltz fee rate.
+     * For example for receiving an invoice of 10000 satoshi with a 0.25% rate would be 25 satoshi.
+     */
+    func boltzFee() throws  -> UInt64?
+    
+    /**
+     * The txid of the claim transaction of the swap
+     */
+    func claimTxid() throws  -> String?
+    
+    func completePay() throws  -> Bool
+    
+    /**
+     * The fee of the swap provider and the network fee
+     *
      * It is equal to the amount of the invoice minus the amount of the onchain transaction.
-     * Does not include the fee of the onchain transaction.
      */
     func fee() throws  -> UInt64?
     
@@ -4662,6 +4811,29 @@ open func bolt11Invoice()throws  -> Bolt11Invoice {
 })
 }
     
+    /**
+     * The fee of the swap provider
+     *
+     * It is equal to the invoice amount multiplied by the boltz fee rate.
+     * For example for receiving an invoice of 10000 satoshi with a 0.25% rate would be 25 satoshi.
+     */
+open func boltzFee()throws  -> UInt64? {
+    return try  FfiConverterOptionUInt64.lift(try rustCallWithError(FfiConverterTypeLwkError.lift) {
+    uniffi_lwk_fn_method_invoiceresponse_boltz_fee(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * The txid of the claim transaction of the swap
+     */
+open func claimTxid()throws  -> String? {
+    return try  FfiConverterOptionString.lift(try rustCallWithError(FfiConverterTypeLwkError.lift) {
+    uniffi_lwk_fn_method_invoiceresponse_claim_txid(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
 open func completePay()throws  -> Bool {
     return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeLwkError.lift) {
     uniffi_lwk_fn_method_invoiceresponse_complete_pay(self.uniffiClonePointer(),$0
@@ -4670,10 +4842,9 @@ open func completePay()throws  -> Bool {
 }
     
     /**
-     * The fee of the swap provider
+     * The fee of the swap provider and the network fee
      *
      * It is equal to the amount of the invoice minus the amount of the onchain transaction.
-     * Does not include the fee of the onchain transaction.
      */
 open func fee()throws  -> UInt64? {
     return try  FfiConverterOptionUInt64.lift(try rustCallWithError(FfiConverterTypeLwkError.lift) {
@@ -6693,13 +6864,20 @@ public protocol PreparePayResponseProtocol : AnyObject {
     
     func advance() throws  -> PaymentState
     
-    func completePay() throws  -> Bool
-    
     /**
      * The fee of the swap provider
      *
+     * It is equal to the invoice amount multiplied by the boltz fee rate.
+     * For example for paying an invoice of 1000 satoshi with a 0.1% rate would be 1 satoshi.
+     */
+    func boltzFee() throws  -> UInt64?
+    
+    func completePay() throws  -> Bool
+    
+    /**
+     * The fee of the swap provider and the network fee
+     *
      * It is equal to the amount requested onchain minus the amount of the bolt11 invoice
-     * Does not include the fee of the onchain transaction.
      */
     func fee() throws  -> UInt64?
     
@@ -6777,6 +6955,19 @@ open func advance()throws  -> PaymentState {
 })
 }
     
+    /**
+     * The fee of the swap provider
+     *
+     * It is equal to the invoice amount multiplied by the boltz fee rate.
+     * For example for paying an invoice of 1000 satoshi with a 0.1% rate would be 1 satoshi.
+     */
+open func boltzFee()throws  -> UInt64? {
+    return try  FfiConverterOptionUInt64.lift(try rustCallWithError(FfiConverterTypeLwkError.lift) {
+    uniffi_lwk_fn_method_preparepayresponse_boltz_fee(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
 open func completePay()throws  -> Bool {
     return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeLwkError.lift) {
     uniffi_lwk_fn_method_preparepayresponse_complete_pay(self.uniffiClonePointer(),$0
@@ -6785,10 +6976,9 @@ open func completePay()throws  -> Bool {
 }
     
     /**
-     * The fee of the swap provider
+     * The fee of the swap provider and the network fee
      *
      * It is equal to the amount requested onchain minus the amount of the bolt11 invoice
-     * Does not include the fee of the onchain transaction.
      */
 open func fee()throws  -> UInt64? {
     return try  FfiConverterOptionUInt64.lift(try rustCallWithError(FfiConverterTypeLwkError.lift) {
@@ -11426,6 +11616,11 @@ public protocol WolletProtocol : AnyObject {
     func descriptor() throws  -> WolletDescriptor
     
     /**
+     * Return the [ELIP152](https://github.com/ElementsProject/ELIPs/blob/main/elip-0152.mediawiki) deterministic wallet identifier.
+     */
+    func dwid() throws  -> String
+    
+    /**
      * Extract the wallet UTXOs that a PSET is creating
      */
     func extractWalletUtxos(pset: Pset) throws  -> [ExternalUtxo]
@@ -11656,6 +11851,16 @@ open func balance()throws  -> [AssetId: UInt64] {
 open func descriptor()throws  -> WolletDescriptor {
     return try  FfiConverterTypeWolletDescriptor.lift(try rustCallWithError(FfiConverterTypeLwkError.lift) {
     uniffi_lwk_fn_method_wollet_descriptor(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Return the [ELIP152](https://github.com/ElementsProject/ELIPs/blob/main/elip-0152.mediawiki) deterministic wallet identifier.
+     */
+open func dwid()throws  -> String {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeLwkError.lift) {
+    uniffi_lwk_fn_method_wollet_dwid(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -13819,7 +14024,7 @@ private var initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_bolt11invoice_timestamp() != 21308) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_boltzsession_btc_to_lbtc() != 27693) {
+    if (uniffi_lwk_checksum_method_boltzsession_btc_to_lbtc() != 27295) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_boltzsession_fetch_swaps_info() != 41140) {
@@ -13828,7 +14033,7 @@ private var initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_boltzsession_invoice() != 64828) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_boltzsession_lbtc_to_btc() != 20669) {
+    if (uniffi_lwk_checksum_method_boltzsession_lbtc_to_btc() != 24979) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_boltzsession_next_index_to_use() != 9036) {
@@ -13903,10 +14108,16 @@ private var initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_invoiceresponse_bolt11_invoice() != 7912) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_lwk_checksum_method_invoiceresponse_boltz_fee() != 64005) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_invoiceresponse_claim_txid() != 30631) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_lwk_checksum_method_invoiceresponse_complete_pay() != 2434) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_invoiceresponse_fee() != 18219) {
+    if (uniffi_lwk_checksum_method_invoiceresponse_fee() != 49159) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_invoiceresponse_serialize() != 38841) {
@@ -14032,10 +14243,13 @@ private var initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_preparepayresponse_advance() != 45947) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_lwk_checksum_method_preparepayresponse_boltz_fee() != 897) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_lwk_checksum_method_preparepayresponse_complete_pay() != 40255) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_preparepayresponse_fee() != 882) {
+    if (uniffi_lwk_checksum_method_preparepayresponse_fee() != 46693) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_preparepayresponse_serialize() != 33437) {
@@ -14383,6 +14597,9 @@ private var initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_wollet_descriptor() != 14476) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_lwk_checksum_method_wollet_dwid() != 60794) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_lwk_checksum_method_wollet_extract_wallet_utxos() != 43538) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -14462,6 +14679,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_constructor_bip_new_bip87() != 60988) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_constructor_bitcoinaddress_new() != 46661) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_constructor_bolt11invoice_new() != 63126) {
