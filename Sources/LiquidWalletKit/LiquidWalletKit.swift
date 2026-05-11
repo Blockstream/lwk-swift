@@ -1878,7 +1878,7 @@ public protocol Amp2Protocol: AnyObject, Sendable {
     /**
      * Create an AMP2 wallet descriptor from the keyorigin xpub of a signer
      */
-    func descriptorFromStr(keyoriginXpub: String) throws  -> Amp2Descriptor
+    func descriptorFromStr(keyoriginXpub: String, descriptorBlindingKey: String) throws  -> Amp2Descriptor
     
     /**
      * Register an AMP2 wallet with the AMP2 server
@@ -1928,7 +1928,22 @@ open class Amp2: Amp2Protocol, @unchecked Sendable {
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_lwk_fn_clone_amp2(self.pointer, $0) }
     }
-    // No primary constructor declared for this class.
+    /**
+     * Create a new AMP2 client
+     *
+     * * `server_key` - The keyorigin xpub of the AMP2 server key
+     * * `url` - The URL of the AMP2 server
+     */
+public convenience init(serverKey: String, url: String)throws  {
+    let pointer =
+        try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_constructor_amp2_new(
+        FfiConverterString.lower(serverKey),
+        FfiConverterString.lower(url),$0
+    )
+}
+    self.init(unsafeFromRawPointer: pointer)
+}
 
     deinit {
         guard let pointer = pointer else {
@@ -1965,10 +1980,11 @@ open func cosign(pset: Pset)throws  -> Pset  {
     /**
      * Create an AMP2 wallet descriptor from the keyorigin xpub of a signer
      */
-open func descriptorFromStr(keyoriginXpub: String)throws  -> Amp2Descriptor  {
+open func descriptorFromStr(keyoriginXpub: String, descriptorBlindingKey: String)throws  -> Amp2Descriptor  {
     return try  FfiConverterTypeAmp2Descriptor_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
     uniffi_lwk_fn_method_amp2_descriptor_from_str(self.uniffiClonePointer(),
-        FfiConverterString.lower(keyoriginXpub),$0
+        FfiConverterString.lower(keyoriginXpub),
+        FfiConverterString.lower(descriptorBlindingKey),$0
     )
 })
 }
@@ -4928,10 +4944,20 @@ open func name() -> String  {
 }
         )
     }
+    open func hash(into hasher: inout Hasher) {
+        let val = try!  FfiConverterUInt64.lift(
+            try! rustCall() {
+    uniffi_lwk_fn_method_currencycode_uniffi_trait_hash(self.uniffiClonePointer(),$0
+    )
+}
+        )
+        hasher.combine(val)
+    }
 
 }
 extension CurrencyCode: CustomStringConvertible {}
 extension CurrencyCode: Equatable {}
+extension CurrencyCode: Hashable {}
 
 
 #if swift(>=5.8)
@@ -5602,6 +5628,36 @@ public convenience init(vout: UInt32, tx: Transaction, unblinded: TxOutSecrets, 
         try! rustCall { uniffi_lwk_fn_free_externalutxo(pointer, $0) }
     }
 
+    
+    /**
+     * Construct an `ExternalUtxo` from unchecked outpoint/txout data.
+     *
+     * Unlike [`ExternalUtxo::new`], this constructor does not inspect a parent transaction or
+     * derive `outpoint` and `txout` from it. It exists as an optimisation for callers that
+     * already hold the exact outpoint, prevout, and unblinded data and want to avoid fetching or
+     * materialising the full transaction just to construct the bindings object.
+     *
+     * Do not use this for pre-segwit external UTXOs. Pre-segwit inputs require the parent
+     * transaction so the builder can populate `non_witness_utxo`, while this constructor always
+     * creates an `ExternalUtxo` without it.
+     *
+     * Use this cautiously. Callers are responsible for ensuring that `outpoint` and `txout`
+     * describe the same UTXO. As with [`ExternalUtxo::new`], callers must also ensure that
+     * `unblinded` and `max_weight_to_satisfy` match that UTXO.
+     *
+     * IMPORTANT: This is a temporary workaround to speed up integration work
+     * and should be removed after a more complete migration to `lwk`.
+     */
+public static func fromUncheckedData(outpoint: OutPoint, txout: TxOut, unblinded: TxOutSecrets, maxWeightToSatisfy: UInt32) -> ExternalUtxo  {
+    return try!  FfiConverterTypeExternalUtxo_lift(try! rustCall() {
+    uniffi_lwk_fn_constructor_externalutxo_from_unchecked_data(
+        FfiConverterTypeOutPoint_lower(outpoint),
+        FfiConverterTypeTxOut_lower(txout),
+        FfiConverterTypeTxOutSecrets_lower(unblinded),
+        FfiConverterUInt32.lower(maxWeightToSatisfy),$0
+    )
+})
+}
     
 
     
@@ -6592,7 +6648,56 @@ public protocol LightningPaymentProtocol: AnyObject, Sendable {
     /**
      * Returns the bolt11 invoice if the lightning payment is a bolt11 invoice
      */
-    func bolt11Invoice()  -> Bolt11Invoice?
+    func bolt11Invoice() throws  -> Bolt11Invoice?
+    
+    /**
+     * Returns the invoice amount in satoshis for a BOLT12 offer if set
+     *
+     * Returns an error if this is not a BOLT12 offer
+     */
+    func bolt12InvoiceAmount() throws  -> UInt64?
+    
+    /**
+     * Checks if the BOLT12 offer has an amount
+     *
+     * Returns true if the offer has a per-item amount (requires specifying number of items),
+     * false if it doesn't (requires specifying total amount in sats).
+     *
+     * Returns an error if this is not a BOLT12 offer.
+     */
+    func bolt12OfferHasAmount() throws  -> Bool
+    
+    /**
+     * Returns true if this is a BOLT12 offer
+     */
+    func isBolt12() throws  -> Bool
+    
+    /**
+     * Sets the amount for a BOLT12 offer without an amount
+     *
+     * The amount should be in satoshis.
+     *
+     * # Errors
+     *
+     * Returns an error if:
+     * - This is not a BOLT12 offer
+     * - The offer already has an amount (use set_bolt12_invoice_amount_via_items instead)
+     */
+    func setBolt12InvoiceAmount(amountSats: UInt64) throws 
+    
+    /**
+     * Sets the amount for a BOLT12 offer based on number of items
+     *
+     * This calculates the final amount as `items * offer_amount` where
+     * `offer_amount` is the per-item amount specified in the offer.
+     *
+     * # Errors
+     *
+     * Returns an error if:
+     * - This is not a BOLT12 offer
+     * - The offer does not have an amount set
+     */
+    func setBolt12InvoiceAmountViaItems(items: UInt64) throws 
     
 }
 /**
@@ -6675,11 +6780,85 @@ public static func fromBolt11Invoice(invoice: Bolt11Invoice) -> LightningPayment
     /**
      * Returns the bolt11 invoice if the lightning payment is a bolt11 invoice
      */
-open func bolt11Invoice() -> Bolt11Invoice?  {
-    return try!  FfiConverterOptionTypeBolt11Invoice.lift(try! rustCall() {
+open func bolt11Invoice()throws  -> Bolt11Invoice?  {
+    return try  FfiConverterOptionTypeBolt11Invoice.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
     uniffi_lwk_fn_method_lightningpayment_bolt11_invoice(self.uniffiClonePointer(),$0
     )
 })
+}
+    
+    /**
+     * Returns the invoice amount in satoshis for a BOLT12 offer if set
+     *
+     * Returns an error if this is not a BOLT12 offer
+     */
+open func bolt12InvoiceAmount()throws  -> UInt64?  {
+    return try  FfiConverterOptionUInt64.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_lightningpayment_bolt12_invoice_amount(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Checks if the BOLT12 offer has an amount
+     *
+     * Returns true if the offer has a per-item amount (requires specifying number of items),
+     * false if it doesn't (requires specifying total amount in sats).
+     *
+     * Returns an error if this is not a BOLT12 offer.
+     */
+open func bolt12OfferHasAmount()throws  -> Bool  {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_lightningpayment_bolt12_offer_has_amount(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Returns true if this is a BOLT12 offer
+     */
+open func isBolt12()throws  -> Bool  {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_lightningpayment_is_bolt12(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Sets the amount for a BOLT12 offer without an amount
+     *
+     * The amount should be in satoshis.
+     *
+     * # Errors
+     *
+     * Returns an error if:
+     * - This is not a BOLT12 offer
+     * - The offer already has an amount (use set_bolt12_invoice_amount_via_items instead)
+     */
+open func setBolt12InvoiceAmount(amountSats: UInt64)throws   {try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_lightningpayment_set_bolt12_invoice_amount(self.uniffiClonePointer(),
+        FfiConverterUInt64.lower(amountSats),$0
+    )
+}
+}
+    
+    /**
+     * Sets the amount for a BOLT12 offer based on number of items
+     *
+     * This calculates the final amount as `items * offer_amount` where
+     * `offer_amount` is the per-item amount specified in the offer.
+     *
+     * # Errors
+     *
+     * Returns an error if:
+     * - This is not a BOLT12 offer
+     * - The offer does not have an amount set
+     */
+open func setBolt12InvoiceAmountViaItems(items: UInt64)throws   {try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_lightningpayment_set_bolt12_invoice_amount_via_items(self.uniffiClonePointer(),
+        FfiConverterUInt64.lower(items),$0
+    )
+}
 }
     
 
@@ -8227,10 +8406,20 @@ open func txBuilder() -> TxBuilder  {
 }
         )
     }
+    open func hash(into hasher: inout Hasher) {
+        let val = try!  FfiConverterUInt64.lift(
+            try! rustCall() {
+    uniffi_lwk_fn_method_network_uniffi_trait_hash(self.uniffiClonePointer(),$0
+    )
+}
+        )
+        hasher.combine(val)
+    }
 
 }
 extension Network: CustomStringConvertible {}
 extension Network: Equatable {}
+extension Network: Hashable {}
 
 
 #if swift(>=5.8)
@@ -8501,6 +8690,11 @@ public protocol PaymentProtocol: AnyObject, Sendable {
     func bitcoinAddress()  -> BitcoinAddress?
     
     /**
+     * Fetches a Bolt11 invoice from a LNURL callback (second step of LNURL-pay).
+     */
+    func fetchLnurlInvoice(info: LnUrlPayResponse, amountSats: UInt64) throws  -> Payment
+    
+    /**
      * Returns the kind of payment category
      */
     func kind()  -> PaymentKind
@@ -8537,6 +8731,16 @@ public protocol PaymentProtocol: AnyObject, Sendable {
      * Returns the LNURL as a string if this is an LnUrl category, None otherwise
      */
     func lnurl()  -> String?
+    
+    /**
+     * Resolves a BIP353 payment instruction into a LightningOffer payment.
+     */
+    func resolveBip353() throws  -> Payment
+    
+    /**
+     * Resolves a LNURL into its metadata (first step of LNURL-pay).
+     */
+    func resolveLnurlInfo() throws  -> LnUrlPayResponse
     
 }
 /**
@@ -8651,6 +8855,18 @@ open func bitcoinAddress() -> BitcoinAddress?  {
 }
     
     /**
+     * Fetches a Bolt11 invoice from a LNURL callback (second step of LNURL-pay).
+     */
+open func fetchLnurlInvoice(info: LnUrlPayResponse, amountSats: UInt64)throws  -> Payment  {
+    return try  FfiConverterTypePayment_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_payment_fetch_lnurl_invoice(self.uniffiClonePointer(),
+        FfiConverterTypeLnUrlPayResponse_lower(info),
+        FfiConverterUInt64.lower(amountSats),$0
+    )
+})
+}
+    
+    /**
      * Returns the kind of payment category
      */
 open func kind() -> PaymentKind  {
@@ -8719,6 +8935,26 @@ open func liquidBip21() -> LiquidBip21?  {
 open func lnurl() -> String?  {
     return try!  FfiConverterOptionString.lift(try! rustCall() {
     uniffi_lwk_fn_method_payment_lnurl(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Resolves a BIP353 payment instruction into a LightningOffer payment.
+     */
+open func resolveBip353()throws  -> Payment  {
+    return try  FfiConverterTypePayment_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_payment_resolve_bip353(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Resolves a LNURL into its metadata (first step of LNURL-pay).
+     */
+open func resolveLnurlInfo()throws  -> LnUrlPayResponse  {
+    return try  FfiConverterTypeLnUrlPayResponse_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_payment_resolve_lnurl_info(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -8971,10 +9207,20 @@ open func showGear() -> Bool?  {
 }
         )
     }
+    open func hash(into hasher: inout Hasher) {
+        let val = try!  FfiConverterUInt64.lift(
+            try! rustCall() {
+    uniffi_lwk_fn_method_posconfig_uniffi_trait_hash(self.uniffiClonePointer(),$0
+    )
+}
+        )
+        hasher.combine(val)
+    }
 
 }
 extension PosConfig: CustomStringConvertible {}
 extension PosConfig: Equatable {}
+extension PosConfig: Hashable {}
 
 
 #if swift(>=5.8)
@@ -10938,6 +11184,8 @@ public protocol ScriptProtocol: AnyObject, Sendable {
     
     /**
      * Return the consensus encoded bytes of the script.
+     *
+     * Deprecated: use `to_bytes()` instead.
      */
     func bytes()  -> Data
     
@@ -10951,13 +11199,18 @@ public protocol ScriptProtocol: AnyObject, Sendable {
      *
      * Returns an equivalent value to the `jet::input_script_hash(index)`/`jet::output_script_hash(index)`.
      */
-    func jetSha256Hex()  -> Hex
+    func jetSha256Hex()  -> String
     
     /**
      * Return the string representation of the script showing op codes and their arguments.
      * For example: "OP_0 OP_PUSHBYTES_32 d2e99f0c38089c08e5e1080ff6658c6075afaa7699d384333d956c470881afde"
      */
     func toAsm()  -> String
+    
+    /**
+     * Return the consensus encoded bytes of the script.
+     */
+    func toBytes()  -> Data
     
 }
 /**
@@ -11005,12 +11258,14 @@ open class Script: ScriptProtocol, @unchecked Sendable {
     /**
      * Construct a Script object from its hex representation.
      * To create the hex representation of a script use `to_string()`.
+     *
+     * Deprecated: use `from_string()` instead.
      */
-public convenience init(hex: Hex)throws  {
+public convenience init(hex: String)throws  {
     let pointer =
         try rustCallWithError(FfiConverterTypeLwkError_lift) {
     uniffi_lwk_fn_constructor_script_new(
-        FfiConverterTypeHex_lower(hex),$0
+        FfiConverterString.lower(hex),$0
     )
 }
     self.init(unsafeFromRawPointer: pointer)
@@ -11036,6 +11291,29 @@ public static func empty() -> Script  {
 }
     
     /**
+     * Construct a Script object from its bytes.
+     */
+public static func fromBytes(bytes: Data)throws  -> Script  {
+    return try  FfiConverterTypeScript_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_constructor_script_from_bytes(
+        FfiConverterData.lower(bytes),$0
+    )
+})
+}
+    
+    /**
+     * Construct a Script object from its canonical string representation.
+     * To create the string representation of a script use `to_string()`.
+     */
+public static func fromString(s: String)throws  -> Script  {
+    return try  FfiConverterTypeScript_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_constructor_script_from_string(
+        FfiConverterString.lower(s),$0
+    )
+})
+}
+    
+    /**
      * Create an OP_RETURN script (for burn outputs).
      */
 public static func newOpReturn(data: Data) -> Script  {
@@ -11050,6 +11328,8 @@ public static func newOpReturn(data: Data) -> Script  {
     
     /**
      * Return the consensus encoded bytes of the script.
+     *
+     * Deprecated: use `to_bytes()` instead.
      */
 open func bytes() -> Data  {
     return try!  FfiConverterData.lift(try! rustCall() {
@@ -11073,8 +11353,8 @@ open func isProvablyUnspendable() -> Bool  {
      *
      * Returns an equivalent value to the `jet::input_script_hash(index)`/`jet::output_script_hash(index)`.
      */
-open func jetSha256Hex() -> Hex  {
-    return try!  FfiConverterTypeHex_lift(try! rustCall() {
+open func jetSha256Hex() -> String  {
+    return try!  FfiConverterString.lift(try! rustCall() {
     uniffi_lwk_fn_method_script_jet_sha256_hex(self.uniffiClonePointer(),$0
     )
 })
@@ -11087,6 +11367,16 @@ open func jetSha256Hex() -> Hex  {
 open func toAsm() -> String  {
     return try!  FfiConverterString.lift(try! rustCall() {
     uniffi_lwk_fn_method_script_to_asm(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Return the consensus encoded bytes of the script.
+     */
+open func toBytes() -> Data  {
+    return try!  FfiConverterData.lift(try! rustCall() {
+    uniffi_lwk_fn_method_script_to_bytes(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -11898,11 +12188,11 @@ open class Transaction: TransactionProtocol, @unchecked Sendable {
      *
      * Deprecated: use `from_string()` instead.
      */
-public convenience init(hex: Hex)throws  {
+public convenience init(hex: String)throws  {
     let pointer =
         try rustCallWithError(FfiConverterTypeLwkError_lift) {
     uniffi_lwk_fn_constructor_transaction_new(
-        FfiConverterTypeHex_lower(hex),$0
+        FfiConverterString.lower(hex),$0
     )
 }
     self.init(unsafeFromRawPointer: pointer)
@@ -12977,14 +13267,14 @@ public protocol TxOutSecretsProtocol: AnyObject, Sendable {
      *
      * Deprecated: use `asset_blinding_factor()` instead.
      */
-    func assetBf()  -> Hex
+    func assetBf()  -> String
     
     /**
      * Get the asset commitment
      *
      * If the output is explicit, returns the empty string
      */
-    func assetCommitment()  -> Hex
+    func assetCommitment()  -> String
     
     /**
      * Return true if the output is explicit (no blinding factors).
@@ -13001,14 +13291,14 @@ public protocol TxOutSecretsProtocol: AnyObject, Sendable {
      *
      * Deprecated: use `value_blinding_factor()` instead.
      */
-    func valueBf()  -> Hex
+    func valueBf()  -> String
     
     /**
      * Get the value commitment
      *
      * If the output is explicit, returns the empty string
      */
-    func valueCommitment()  -> Hex
+    func valueCommitment()  -> String
     
 }
 /**
@@ -13081,8 +13371,8 @@ open func asset() -> AssetId  {
      *
      * Deprecated: use `asset_blinding_factor()` instead.
      */
-open func assetBf() -> Hex  {
-    return try!  FfiConverterTypeHex_lift(try! rustCall() {
+open func assetBf() -> String  {
+    return try!  FfiConverterString.lift(try! rustCall() {
     uniffi_lwk_fn_method_txoutsecrets_asset_bf(self.uniffiClonePointer(),$0
     )
 })
@@ -13093,8 +13383,8 @@ open func assetBf() -> Hex  {
      *
      * If the output is explicit, returns the empty string
      */
-open func assetCommitment() -> Hex  {
-    return try!  FfiConverterTypeHex_lift(try! rustCall() {
+open func assetCommitment() -> String  {
+    return try!  FfiConverterString.lift(try! rustCall() {
     uniffi_lwk_fn_method_txoutsecrets_asset_commitment(self.uniffiClonePointer(),$0
     )
 })
@@ -13125,8 +13415,8 @@ open func value() -> UInt64  {
      *
      * Deprecated: use `value_blinding_factor()` instead.
      */
-open func valueBf() -> Hex  {
-    return try!  FfiConverterTypeHex_lift(try! rustCall() {
+open func valueBf() -> String  {
+    return try!  FfiConverterString.lift(try! rustCall() {
     uniffi_lwk_fn_method_txoutsecrets_value_bf(self.uniffiClonePointer(),$0
     )
 })
@@ -13137,8 +13427,8 @@ open func valueBf() -> Hex  {
      *
      * If the output is explicit, returns the empty string
      */
-open func valueCommitment() -> Hex  {
-    return try!  FfiConverterTypeHex_lift(try! rustCall() {
+open func valueCommitment() -> String  {
+    return try!  FfiConverterString.lift(try! rustCall() {
     uniffi_lwk_fn_method_txoutsecrets_value_commitment(self.uniffiClonePointer(),$0
     )
 })
@@ -13209,8 +13499,15 @@ public protocol TxidProtocol: AnyObject, Sendable {
     
     /**
      * Return the bytes of the transaction identifier.
+     *
+     * Deprecated: use `to_bytes()` instead.
      */
     func bytes()  -> Data
+    
+    /**
+     * Return the bytes of the transaction identifier.
+     */
+    func toBytes()  -> Data
     
 }
 /**
@@ -13257,12 +13554,14 @@ open class Txid: TxidProtocol, @unchecked Sendable {
     }
     /**
      * Construct a Txid object
+     *
+     * Deprecated: use `from_string()` instead.
      */
-public convenience init(hex: Hex)throws  {
+public convenience init(hex: String)throws  {
     let pointer =
         try rustCallWithError(FfiConverterTypeLwkError_lift) {
     uniffi_lwk_fn_constructor_txid_new(
-        FfiConverterTypeHex_lower(hex),$0
+        FfiConverterString.lower(hex),$0
     )
 }
     self.init(unsafeFromRawPointer: pointer)
@@ -13277,14 +13576,50 @@ public convenience init(hex: Hex)throws  {
     }
 
     
+    /**
+     * Construct a Transaction object from its bytes.
+     */
+public static func fromBytes(bytes: Data)throws  -> Txid  {
+    return try  FfiConverterTypeTxid_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_constructor_txid_from_bytes(
+        FfiConverterData.lower(bytes),$0
+    )
+})
+}
+    
+    /**
+     * Construct a Txid object from its canonical string representation.
+     *
+     * To create the string representation of a Txid use `to_string()`.
+     */
+public static func fromString(s: String)throws  -> Txid  {
+    return try  FfiConverterTypeTxid_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_constructor_txid_from_string(
+        FfiConverterString.lower(s),$0
+    )
+})
+}
+    
 
     
     /**
      * Return the bytes of the transaction identifier.
+     *
+     * Deprecated: use `to_bytes()` instead.
      */
 open func bytes() -> Data  {
     return try!  FfiConverterData.lift(try! rustCall() {
     uniffi_lwk_fn_method_txid_bytes(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Return the bytes of the transaction identifier.
+     */
+open func toBytes() -> Data  {
+    return try!  FfiConverterData.lift(try! rustCall() {
+    uniffi_lwk_fn_method_txid_to_bytes(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -15226,12 +15561,21 @@ public protocol WolletBuilderProtocol: AnyObject, Sendable {
     func build() throws  -> Wollet
     
     /**
+     * Set the wallet as "utxo only"
+     *
+     * **Experimental**: This API may change without notice.
+     */
+    func utxoOnly(utxoOnly: Bool) throws 
+    
+    /**
      * Persist wallet updates in the legacy encrypted filesystem store.
      */
     func withLegacyFsStore(datadir: String) throws 
     
     /**
      * Set the threshold used to merge persisted updates during build.
+     *
+     * **Experimental**: This API may change without notice.
      *
      * `None` disables merging (default behavior).
      */
@@ -15316,6 +15660,18 @@ open func build()throws  -> Wollet  {
 }
     
     /**
+     * Set the wallet as "utxo only"
+     *
+     * **Experimental**: This API may change without notice.
+     */
+open func utxoOnly(utxoOnly: Bool)throws   {try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_wolletbuilder_utxo_only(self.uniffiClonePointer(),
+        FfiConverterBool.lower(utxoOnly),$0
+    )
+}
+}
+    
+    /**
      * Persist wallet updates in the legacy encrypted filesystem store.
      */
 open func withLegacyFsStore(datadir: String)throws   {try rustCallWithError(FfiConverterTypeLwkError_lift) {
@@ -15327,6 +15683,8 @@ open func withLegacyFsStore(datadir: String)throws   {try rustCallWithError(FfiC
     
     /**
      * Set the threshold used to merge persisted updates during build.
+     *
+     * **Experimental**: This API may change without notice.
      *
      * `None` disables merging (default behavior).
      */
@@ -15862,6 +16220,133 @@ public func FfiConverterTypeLiquidBip21_lift(_ buf: RustBuffer) throws -> Liquid
 #endif
 public func FfiConverterTypeLiquidBip21_lower(_ value: LiquidBip21) -> RustBuffer {
     return FfiConverterTypeLiquidBip21.lower(value)
+}
+
+
+/**
+ * LNURL-pay metadata response
+ */
+public struct LnUrlPayResponse {
+    /**
+     * The callback URL to fetch the invoice
+     */
+    public var callback: String
+    /**
+     * Maximum amount (in millisatoshis) the service is willing to receive
+     */
+    public var maxSendable: UInt64
+    /**
+     * Minimum amount (in millisatoshis) the service is willing to receive
+     */
+    public var minSendable: UInt64
+    /**
+     * Metadata describing the payment
+     */
+    public var metadata: String
+    /**
+     * The type of LNURL request (should be "payRequest")
+     */
+    public var tag: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * The callback URL to fetch the invoice
+         */callback: String, 
+        /**
+         * Maximum amount (in millisatoshis) the service is willing to receive
+         */maxSendable: UInt64, 
+        /**
+         * Minimum amount (in millisatoshis) the service is willing to receive
+         */minSendable: UInt64, 
+        /**
+         * Metadata describing the payment
+         */metadata: String, 
+        /**
+         * The type of LNURL request (should be "payRequest")
+         */tag: String) {
+        self.callback = callback
+        self.maxSendable = maxSendable
+        self.minSendable = minSendable
+        self.metadata = metadata
+        self.tag = tag
+    }
+}
+
+#if compiler(>=6)
+extension LnUrlPayResponse: Sendable {}
+#endif
+
+
+extension LnUrlPayResponse: Equatable, Hashable {
+    public static func ==(lhs: LnUrlPayResponse, rhs: LnUrlPayResponse) -> Bool {
+        if lhs.callback != rhs.callback {
+            return false
+        }
+        if lhs.maxSendable != rhs.maxSendable {
+            return false
+        }
+        if lhs.minSendable != rhs.minSendable {
+            return false
+        }
+        if lhs.metadata != rhs.metadata {
+            return false
+        }
+        if lhs.tag != rhs.tag {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(callback)
+        hasher.combine(maxSendable)
+        hasher.combine(minSendable)
+        hasher.combine(metadata)
+        hasher.combine(tag)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeLnUrlPayResponse: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LnUrlPayResponse {
+        return
+            try LnUrlPayResponse(
+                callback: FfiConverterString.read(from: &buf), 
+                maxSendable: FfiConverterUInt64.read(from: &buf), 
+                minSendable: FfiConverterUInt64.read(from: &buf), 
+                metadata: FfiConverterString.read(from: &buf), 
+                tag: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: LnUrlPayResponse, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.callback, into: &buf)
+        FfiConverterUInt64.write(value.maxSendable, into: &buf)
+        FfiConverterUInt64.write(value.minSendable, into: &buf)
+        FfiConverterString.write(value.metadata, into: &buf)
+        FfiConverterString.write(value.tag, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeLnUrlPayResponse_lift(_ buf: RustBuffer) throws -> LnUrlPayResponse {
+    return try FfiConverterTypeLnUrlPayResponse.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeLnUrlPayResponse_lower(_ value: LnUrlPayResponse) -> RustBuffer {
+    return FfiConverterTypeLnUrlPayResponse.lower(value)
 }
 
 
@@ -17953,50 +18438,6 @@ public func FfiConverterTypeAssetId_lower(_ value: AssetId) -> RustBuffer {
     return FfiConverterTypeAssetId.lower(value)
 }
 
-
-
-/**
- * Typealias from the type name used in the UDL file to the builtin type.  This
- * is needed because the UDL type name is used in function/method signatures.
- */
-public typealias Hex = String
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public struct FfiConverterTypeHex: FfiConverter {
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Hex {
-        return try FfiConverterString.read(from: &buf)
-    }
-
-    public static func write(_ value: Hex, into buf: inout [UInt8]) {
-        return FfiConverterString.write(value, into: &buf)
-    }
-
-    public static func lift(_ value: RustBuffer) throws -> Hex {
-        return try FfiConverterString.lift(value)
-    }
-
-    public static func lower(_ value: Hex) -> RustBuffer {
-        return FfiConverterString.lower(value)
-    }
-}
-
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeHex_lift(_ value: RustBuffer) throws -> Hex {
-    return try FfiConverterTypeHex.lift(value)
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeHex_lower(_ value: Hex) -> RustBuffer {
-    return FfiConverterTypeHex.lower(value)
-}
-
 /**
  * Derive asset id from contract and transaction input
  */
@@ -18121,7 +18562,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_amp2_cosign() != 5581) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_amp2_descriptor_from_str() != 752) {
+    if (uniffi_lwk_checksum_method_amp2_descriptor_from_str() != 47737) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_amp2_register_wallet() != 64376) {
@@ -18421,7 +18862,22 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_issuance_token_satoshi() != 60126) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_lightningpayment_bolt11_invoice() != 41990) {
+    if (uniffi_lwk_checksum_method_lightningpayment_bolt11_invoice() != 47603) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_lightningpayment_bolt12_invoice_amount() != 1090) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_lightningpayment_bolt12_offer_has_amount() != 19213) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_lightningpayment_is_bolt12() != 28992) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_lightningpayment_set_bolt12_invoice_amount() != 30788) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_lightningpayment_set_bolt12_invoice_amount_via_items() != 53725) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_lockupresponse_advance() != 46331) {
@@ -18550,6 +19006,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_payment_bitcoin_address() != 29551) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_lwk_checksum_method_payment_fetch_lnurl_invoice() != 15964) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_lwk_checksum_method_payment_kind() != 21742) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -18569,6 +19028,12 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_payment_lnurl() != 34751) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_payment_resolve_bip353() != 62126) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_payment_resolve_lnurl_info() != 1427) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_posconfig_currency() != 11088) {
@@ -18736,16 +19201,19 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_recipient_vout() != 24321) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_script_bytes() != 35040) {
+    if (uniffi_lwk_checksum_method_script_bytes() != 57904) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_script_is_provably_unspendable() != 12490) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_script_jet_sha256_hex() != 5565) {
+    if (uniffi_lwk_checksum_method_script_jet_sha256_hex() != 57228) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_script_to_asm() != 32896) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_script_to_bytes() != 34286) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_secretkey_bytes() != 43476) {
@@ -18886,10 +19354,10 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_txoutsecrets_asset() != 26014) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_txoutsecrets_asset_bf() != 3179) {
+    if (uniffi_lwk_checksum_method_txoutsecrets_asset_bf() != 30117) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_txoutsecrets_asset_commitment() != 16600) {
+    if (uniffi_lwk_checksum_method_txoutsecrets_asset_commitment() != 19954) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_txoutsecrets_is_explicit() != 53000) {
@@ -18898,13 +19366,16 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_txoutsecrets_value() != 16330) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_txoutsecrets_value_bf() != 58526) {
+    if (uniffi_lwk_checksum_method_txoutsecrets_value_bf() != 3529) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_txoutsecrets_value_commitment() != 41762) {
+    if (uniffi_lwk_checksum_method_txoutsecrets_value_commitment() != 62649) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_txid_bytes() != 6953) {
+    if (uniffi_lwk_checksum_method_txid_bytes() != 44008) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_txid_to_bytes() != 51573) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_unvalidatedliquidexproposal_insecure_validate() != 45940) {
@@ -19045,10 +19516,13 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_wolletbuilder_build() != 21047) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_lwk_checksum_method_wolletbuilder_utxo_only() != 35283) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_lwk_checksum_method_wolletbuilder_with_legacy_fs_store() != 35203) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_wolletbuilder_with_merge_threshold() != 37282) {
+    if (uniffi_lwk_checksum_method_wolletbuilder_with_merge_threshold() != 61627) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_wolletdescriptor_derive_blinding_key() != 27121) {
@@ -19076,6 +19550,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_constructor_amp0pset_new() != 58003) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_constructor_amp2_new() != 8911) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_constructor_amp2_new_testnet() != 61837) {
@@ -19142,6 +19619,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_constructor_esploraclient_new_waterfalls() != 40758) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_constructor_externalutxo_from_unchecked_data() != 15302) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_constructor_externalutxo_new() != 40531) {
@@ -19213,7 +19693,13 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_constructor_script_empty() != 47087) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_constructor_script_new() != 12404) {
+    if (uniffi_lwk_checksum_constructor_script_from_bytes() != 13959) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_constructor_script_from_string() != 12141) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_constructor_script_new() != 19671) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_constructor_script_new_op_return() != 7079) {
@@ -19237,7 +19723,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_constructor_transaction_from_string() != 61469) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_constructor_transaction_new() != 34031) {
+    if (uniffi_lwk_checksum_constructor_transaction_new() != 64527) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_constructor_txbuilder_new() != 56158) {
@@ -19246,7 +19732,13 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_constructor_txout_from_explicit() != 4839) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_constructor_txid_new() != 63870) {
+    if (uniffi_lwk_checksum_constructor_txid_from_bytes() != 287) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_constructor_txid_from_string() != 27945) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_constructor_txid_new() != 77) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_constructor_unvalidatedliquidexproposal_from_pset() != 44953) {
