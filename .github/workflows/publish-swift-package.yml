@@ -42,6 +42,12 @@ jobs:
           ref: ${{ inputs.version }}
           path: build
       - uses: Swatinem/rust-cache@v2
+      - name: Add MARKETING_VERSION to project.yml
+        working-directory: build/lwk_bindings/swift
+        run: |
+          brew install yq
+          yq e '.targets.lwkFFI.settings.MARKETING_VERSION = env(VERSION)' -i project.yml
+          yq e '.targets.lwkFFI.settings.CURRENT_PROJECT_VERSION = "1"' -i project.yml
       - name: Build Swift bindings
         working-directory: build
         run: just swift
