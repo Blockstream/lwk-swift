@@ -4032,6 +4032,11 @@ public protocol BoltzSessionProtocol: AnyObject, Sendable {
     func completedSwapIds() throws  -> [String]
     
     /**
+     * Fetch a BOLT12 invoice without creating or starting a swap
+     */
+    func fetchBolt12Invoice(lightningPayment: LightningPayment) throws  -> Invoice
+    
+    /**
      * Fetch informations, such as min and max amounts, about the reverse and submarine pairs from the boltz api.
      */
     func fetchSwapsInfo() throws  -> String
@@ -4306,6 +4311,17 @@ open func btcToLbtc(amount: UInt64, refundAddress: BitcoinAddress, claimAddress:
 open func completedSwapIds()throws  -> [String]  {
     return try  FfiConverterSequenceString.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
     uniffi_lwk_fn_method_boltzsession_completed_swap_ids(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Fetch a BOLT12 invoice without creating or starting a swap
+     */
+open func fetchBolt12Invoice(lightningPayment: LightningPayment)throws  -> Invoice  {
+    return try  FfiConverterTypeInvoice_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_boltzsession_fetch_bolt12_invoice(self.uniffiClonePointer(),
+        FfiConverterTypeLightningPayment_lower(lightningPayment),$0
     )
 })
 }
@@ -6133,6 +6149,209 @@ public func FfiConverterTypeForeignStoreLink_lower(_ value: ForeignStoreLink) ->
 
 
 
+/**
+ * Represents a lightning invoice (BOLT11 or BOLT12).
+ */
+public protocol InvoiceProtocol: AnyObject, Sendable {
+    
+    /**
+     * Returns the amount in whole satoshis.
+     */
+    func amountSats() throws  -> UInt64
+    
+    /**
+     * Returns the BOLT11 invoice if this is a BOLT11 invoice.
+     */
+    func bolt11Invoice()  -> Bolt11Invoice?
+    
+    /**
+     * Returns the BOLT12 invoice string if this is a BOLT12 invoice.
+     */
+    func bolt12Invoice()  -> String?
+    
+    /**
+     * Returns true if this is a BOLT11 invoice.
+     */
+    func isBolt11()  -> Bool
+    
+    /**
+     * Returns true if this is a BOLT12 invoice.
+     */
+    func isBolt12()  -> Bool
+    
+}
+/**
+ * Represents a lightning invoice (BOLT11 or BOLT12).
+ */
+open class Invoice: InvoiceProtocol, @unchecked Sendable {
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_lwk_fn_clone_invoice(self.pointer, $0) }
+    }
+    // No primary constructor declared for this class.
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_lwk_fn_free_invoice(pointer, $0) }
+    }
+
+    
+
+    
+    /**
+     * Returns the amount in whole satoshis.
+     */
+open func amountSats()throws  -> UInt64  {
+    return try  FfiConverterUInt64.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_invoice_amount_sats(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Returns the BOLT11 invoice if this is a BOLT11 invoice.
+     */
+open func bolt11Invoice() -> Bolt11Invoice?  {
+    return try!  FfiConverterOptionTypeBolt11Invoice.lift(try! rustCall() {
+    uniffi_lwk_fn_method_invoice_bolt11_invoice(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Returns the BOLT12 invoice string if this is a BOLT12 invoice.
+     */
+open func bolt12Invoice() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_lwk_fn_method_invoice_bolt12_invoice(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Returns true if this is a BOLT11 invoice.
+     */
+open func isBolt11() -> Bool  {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_lwk_fn_method_invoice_is_bolt11(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Returns true if this is a BOLT12 invoice.
+     */
+open func isBolt12() -> Bool  {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_lwk_fn_method_invoice_is_bolt12(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    open var description: String {
+        return try!  FfiConverterString.lift(
+            try! rustCall() {
+    uniffi_lwk_fn_method_invoice_uniffi_trait_display(self.uniffiClonePointer(),$0
+    )
+}
+        )
+    }
+
+}
+extension Invoice: CustomStringConvertible {}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeInvoice: FfiConverter {
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = Invoice
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Invoice {
+        return Invoice(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: Invoice) -> UnsafeMutableRawPointer {
+        return value.uniffiClonePointer()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Invoice {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: Invoice, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeInvoice_lift(_ pointer: UnsafeMutableRawPointer) throws -> Invoice {
+    return try FfiConverterTypeInvoice.lift(pointer)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeInvoice_lower(_ value: Invoice) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeInvoice.lower(value)
+}
+
+
+
+
+
+
 public protocol InvoiceResponseProtocol: AnyObject, Sendable {
     
     func advance() throws  -> PaymentState
@@ -6668,6 +6887,11 @@ public protocol LightningPaymentProtocol: AnyObject, Sendable {
     func bolt12OfferHasAmount() throws  -> Bool
     
     /**
+     * Returns the payment description if present
+     */
+    func description() throws  -> String?
+    
+    /**
      * Returns true if this is a BOLT12 offer
      */
     func isBolt12() throws  -> Bool
@@ -6810,6 +7034,16 @@ open func bolt12InvoiceAmount()throws  -> UInt64?  {
 open func bolt12OfferHasAmount()throws  -> Bool  {
     return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
     uniffi_lwk_fn_method_lightningpayment_bolt12_offer_has_amount(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Returns the payment description if present
+     */
+open func description()throws  -> String?  {
+    return try  FfiConverterOptionString.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_lightningpayment_description(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -7605,6 +7839,11 @@ public protocol LwkTestEnvProtocol: AnyObject, Sendable {
     func issueAsset(satoshi: UInt64)  -> AssetId
     
     /**
+     * Get the network of the test environment.
+     */
+    func network()  -> Network
+    
+    /**
      * Send `satoshi` to `address` from the node
      */
     func sendToAddress(address: Address, satoshi: UInt64, asset: AssetId?)  -> Txid
@@ -7755,6 +7994,16 @@ open func issueAsset(satoshi: UInt64) -> AssetId  {
     return try!  FfiConverterTypeAssetId_lift(try! rustCall() {
     uniffi_lwk_fn_method_lwktestenv_issue_asset(self.uniffiClonePointer(),
         FfiConverterUInt64.lower(satoshi),$0
+    )
+})
+}
+    
+    /**
+     * Get the network of the test environment.
+     */
+open func network() -> Network  {
+    return try!  FfiConverterTypeNetwork_lift(try! rustCall() {
+    uniffi_lwk_fn_method_lwktestenv_network(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -15981,6 +16230,16 @@ public struct BoltzSessionBuilder {
     public var timeoutAdvance: UInt64?
     public var nextIndexToUse: UInt32?
     public var referralId: String?
+    /**
+     * Optional Boltz API base URL override.
+     *
+     * The caller is responsible for ensuring the provider behind this URL matches `network`.
+     *
+     * If this is used together with `store`, the caller must use a different store per provider.
+     * Persisted swap data is not namespaced by provider, so reusing the same store across
+     * different `api_url` values can mix swaps from different providers.
+     */
+    public var apiUrl: String?
     public var bitcoinElectrumClientUrl: String?
     public var randomPreimages: Bool
     /**
@@ -15988,17 +16247,34 @@ public struct BoltzSessionBuilder {
      *
      * When set, swap data will be automatically persisted to the store after creation
      * and on each state change. This enables automatic restoration of pending swaps.
+     *
+     * The store is not namespaced by provider, so if different `api_url` values are used the
+     * caller must use a different store per provider to avoid mixing swaps from different
+     * providers.
      */
     public var store: ForeignStoreLink?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(network: Network, client: AnyClient, timeout: UInt64? = nil, mnemonic: Mnemonic? = nil, logging: Logging? = nil, polling: Bool = false, timeoutAdvance: UInt64? = nil, nextIndexToUse: UInt32? = nil, referralId: String? = nil, bitcoinElectrumClientUrl: String? = nil, randomPreimages: Bool = false, 
+    public init(network: Network, client: AnyClient, timeout: UInt64? = nil, mnemonic: Mnemonic? = nil, logging: Logging? = nil, polling: Bool = false, timeoutAdvance: UInt64? = nil, nextIndexToUse: UInt32? = nil, referralId: String? = nil, 
+        /**
+         * Optional Boltz API base URL override.
+         *
+         * The caller is responsible for ensuring the provider behind this URL matches `network`.
+         *
+         * If this is used together with `store`, the caller must use a different store per provider.
+         * Persisted swap data is not namespaced by provider, so reusing the same store across
+         * different `api_url` values can mix swaps from different providers.
+         */apiUrl: String? = nil, bitcoinElectrumClientUrl: String? = nil, randomPreimages: Bool = false, 
         /**
          * Optional store for persisting swap data
          *
          * When set, swap data will be automatically persisted to the store after creation
          * and on each state change. This enables automatic restoration of pending swaps.
+         *
+         * The store is not namespaced by provider, so if different `api_url` values are used the
+         * caller must use a different store per provider to avoid mixing swaps from different
+         * providers.
          */store: ForeignStoreLink? = nil) {
         self.network = network
         self.client = client
@@ -16009,6 +16285,7 @@ public struct BoltzSessionBuilder {
         self.timeoutAdvance = timeoutAdvance
         self.nextIndexToUse = nextIndexToUse
         self.referralId = referralId
+        self.apiUrl = apiUrl
         self.bitcoinElectrumClientUrl = bitcoinElectrumClientUrl
         self.randomPreimages = randomPreimages
         self.store = store
@@ -16037,6 +16314,7 @@ public struct FfiConverterTypeBoltzSessionBuilder: FfiConverterRustBuffer {
                 timeoutAdvance: FfiConverterOptionUInt64.read(from: &buf), 
                 nextIndexToUse: FfiConverterOptionUInt32.read(from: &buf), 
                 referralId: FfiConverterOptionString.read(from: &buf), 
+                apiUrl: FfiConverterOptionString.read(from: &buf), 
                 bitcoinElectrumClientUrl: FfiConverterOptionString.read(from: &buf), 
                 randomPreimages: FfiConverterBool.read(from: &buf), 
                 store: FfiConverterOptionTypeForeignStoreLink.read(from: &buf)
@@ -16053,6 +16331,7 @@ public struct FfiConverterTypeBoltzSessionBuilder: FfiConverterRustBuffer {
         FfiConverterOptionUInt64.write(value.timeoutAdvance, into: &buf)
         FfiConverterOptionUInt32.write(value.nextIndexToUse, into: &buf)
         FfiConverterOptionString.write(value.referralId, into: &buf)
+        FfiConverterOptionString.write(value.apiUrl, into: &buf)
         FfiConverterOptionString.write(value.bitcoinElectrumClientUrl, into: &buf)
         FfiConverterBool.write(value.randomPreimages, into: &buf)
         FfiConverterOptionTypeForeignStoreLink.write(value.store, into: &buf)
@@ -16756,6 +17035,8 @@ public enum LwkError: Swift.Error {
     
     case Generic(msg: String
     )
+    case GenericWithSwapId(msg: String, swapId: String
+    )
     case PoisonError(msg: String
     )
     case MagicRoutingHint(address: String, amount: UInt64, uri: String
@@ -16785,21 +17066,25 @@ public struct FfiConverterTypeLwkError: FfiConverterRustBuffer {
         case 1: return .Generic(
             msg: try FfiConverterString.read(from: &buf)
             )
-        case 2: return .PoisonError(
+        case 2: return .GenericWithSwapId(
+            msg: try FfiConverterString.read(from: &buf), 
+            swapId: try FfiConverterString.read(from: &buf)
+            )
+        case 3: return .PoisonError(
             msg: try FfiConverterString.read(from: &buf)
             )
-        case 3: return .MagicRoutingHint(
+        case 4: return .MagicRoutingHint(
             address: try FfiConverterString.read(from: &buf), 
             amount: try FfiConverterUInt64.read(from: &buf), 
             uri: try FfiConverterString.read(from: &buf)
             )
-        case 4: return .SwapExpired(
+        case 5: return .SwapExpired(
             swapId: try FfiConverterString.read(from: &buf), 
             status: try FfiConverterString.read(from: &buf)
             )
-        case 5: return .NoBoltzUpdate
-        case 6: return .ObjectConsumed
-        case 7: return .BoltzBackendHttpError(
+        case 6: return .NoBoltzUpdate
+        case 7: return .ObjectConsumed
+        case 8: return .BoltzBackendHttpError(
             status: try FfiConverterUInt16.read(from: &buf), 
             error: try FfiConverterOptionString.read(from: &buf)
             )
@@ -16820,34 +17105,40 @@ public struct FfiConverterTypeLwkError: FfiConverterRustBuffer {
             FfiConverterString.write(msg, into: &buf)
             
         
-        case let .PoisonError(msg):
+        case let .GenericWithSwapId(msg,swapId):
             writeInt(&buf, Int32(2))
+            FfiConverterString.write(msg, into: &buf)
+            FfiConverterString.write(swapId, into: &buf)
+            
+        
+        case let .PoisonError(msg):
+            writeInt(&buf, Int32(3))
             FfiConverterString.write(msg, into: &buf)
             
         
         case let .MagicRoutingHint(address,amount,uri):
-            writeInt(&buf, Int32(3))
+            writeInt(&buf, Int32(4))
             FfiConverterString.write(address, into: &buf)
             FfiConverterUInt64.write(amount, into: &buf)
             FfiConverterString.write(uri, into: &buf)
             
         
         case let .SwapExpired(swapId,status):
-            writeInt(&buf, Int32(4))
+            writeInt(&buf, Int32(5))
             FfiConverterString.write(swapId, into: &buf)
             FfiConverterString.write(status, into: &buf)
             
         
         case .NoBoltzUpdate:
-            writeInt(&buf, Int32(5))
-        
-        
-        case .ObjectConsumed:
             writeInt(&buf, Int32(6))
         
         
-        case let .BoltzBackendHttpError(status,error):
+        case .ObjectConsumed:
             writeInt(&buf, Int32(7))
+        
+        
+        case let .BoltzBackendHttpError(status,error):
+            writeInt(&buf, Int32(8))
             FfiConverterUInt16.write(status, into: &buf)
             FfiConverterOptionString.write(error, into: &buf)
             
@@ -18694,6 +18985,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_boltzsession_completed_swap_ids() != 32553) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_lwk_checksum_method_boltzsession_fetch_bolt12_invoice() != 35212) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_lwk_checksum_method_boltzsession_fetch_swaps_info() != 41140) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -18805,6 +19099,21 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_foreignstore_remove() != 51371) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_lwk_checksum_method_invoice_amount_sats() != 2137) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_invoice_bolt11_invoice() != 55620) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_invoice_bolt12_invoice() != 16474) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_invoice_is_bolt11() != 29075) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_invoice_is_bolt12() != 51626) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_lwk_checksum_method_invoiceresponse_advance() != 28093) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -18869,6 +19178,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_lightningpayment_bolt12_offer_has_amount() != 19213) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_lightningpayment_description() != 12541) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_lightningpayment_is_bolt12() != 28992) {
@@ -18950,6 +19262,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_lwktestenv_issue_asset() != 64492) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_lwktestenv_network() != 45785) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_lwktestenv_send_to_address() != 578) {
