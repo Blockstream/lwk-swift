@@ -2119,6 +2119,21 @@ open class Amp2Descriptor: Amp2DescriptorProtocol, @unchecked Sendable {
     }
 
     
+    /**
+     * Create an `Amp2Descriptor` using any `WolletDescriptor`
+     *
+     * Warning: AMP2 server only supports a limited subset of descriptors.
+     * To make sure this AMP2 descriptor can be used safely,
+     * register this with AMP2 as soon as possible.
+     */
+public static func newWithCustomDescriptor(desc: WolletDescriptor) -> Amp2Descriptor  {
+    return try!  FfiConverterTypeAmp2Descriptor_lift(try! rustCall() {
+    uniffi_lwk_fn_constructor_amp2descriptor_new_with_custom_descriptor(
+        FfiConverterTypeWolletDescriptor_lower(desc),$0
+    )
+})
+}
+    
 
     
 open func descriptor() -> WolletDescriptor  {
@@ -4025,6 +4040,11 @@ public protocol BoltzSessionProtocol: AnyObject, Sendable {
     func btcToLbtc(amount: UInt64, refundAddress: BitcoinAddress, claimAddress: Address, webhook: WebHook?) throws  -> LockupResponse
     
     /**
+     * Prepare to pay a Lightning invoice from Bitcoin onchain funds.
+     */
+    func btcToLn(lightningPayment: LightningPayment, refundAddress: BitcoinAddress, webhook: WebHook?) throws  -> PreparePayResponse
+    
+    /**
      * Get the list of completed swap IDs from the store
      *
      * Returns an error if no store is configured.
@@ -4057,6 +4077,11 @@ public protocol BoltzSessionProtocol: AnyObject, Sendable {
      * Create an onchain swap to convert LBTC to BTC
      */
     func lbtcToBtc(amount: UInt64, refundAddress: Address, claimAddress: BitcoinAddress, webhook: WebHook?) throws  -> LockupResponse
+    
+    /**
+     * Create a new invoice for a Lightning to Bitcoin reverse swap.
+     */
+    func lnToBtc(amount: UInt64, description: String?, claimAddress: BitcoinAddress, webhook: WebHook?) throws  -> InvoiceResponse
     
     /**
      * Get the next index to use for deriving keypairs
@@ -4151,6 +4176,17 @@ public protocol BoltzSessionProtocol: AnyObject, Sendable {
      * The claim and refund addresses don't need to be the same used when creating the swap.
      */
     func restorableLbtcToBtcSwaps(swapList: SwapList, claimAddress: BitcoinAddress, refundAddress: Address) throws  -> [String]
+    
+    /**
+     * From the swaps returned by the boltz api via [`BoltzSession::swap_restore`]:
+     *
+     * - filter the reverse BTC swaps
+     * - add information from the session
+     * - return typed data
+     *
+     * The claim address doesn't need to be the same used when creating the swap.
+     */
+    func restorableReverseBtcSwaps(swapList: SwapList, claimAddress: BitcoinAddress) throws  -> [String]
     
     /**
      * From the swaps returned by the boltz api via [`BoltzSession::swap_restore`]:
@@ -4304,6 +4340,19 @@ open func btcToLbtc(amount: UInt64, refundAddress: BitcoinAddress, claimAddress:
 }
     
     /**
+     * Prepare to pay a Lightning invoice from Bitcoin onchain funds.
+     */
+open func btcToLn(lightningPayment: LightningPayment, refundAddress: BitcoinAddress, webhook: WebHook?)throws  -> PreparePayResponse  {
+    return try  FfiConverterTypePreparePayResponse_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_boltzsession_btc_to_ln(self.uniffiClonePointer(),
+        FfiConverterTypeLightningPayment_lower(lightningPayment),
+        FfiConverterTypeBitcoinAddress_lower(refundAddress),
+        FfiConverterOptionTypeWebHook.lower(webhook),$0
+    )
+})
+}
+    
+    /**
      * Get the list of completed swap IDs from the store
      *
      * Returns an error if no store is configured.
@@ -4371,6 +4420,20 @@ open func lbtcToBtc(amount: UInt64, refundAddress: Address, claimAddress: Bitcoi
     uniffi_lwk_fn_method_boltzsession_lbtc_to_btc(self.uniffiClonePointer(),
         FfiConverterUInt64.lower(amount),
         FfiConverterTypeAddress_lower(refundAddress),
+        FfiConverterTypeBitcoinAddress_lower(claimAddress),
+        FfiConverterOptionTypeWebHook.lower(webhook),$0
+    )
+})
+}
+    
+    /**
+     * Create a new invoice for a Lightning to Bitcoin reverse swap.
+     */
+open func lnToBtc(amount: UInt64, description: String?, claimAddress: BitcoinAddress, webhook: WebHook?)throws  -> InvoiceResponse  {
+    return try  FfiConverterTypeInvoiceResponse_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_boltzsession_ln_to_btc(self.uniffiClonePointer(),
+        FfiConverterUInt64.lower(amount),
+        FfiConverterOptionString.lower(description),
         FfiConverterTypeBitcoinAddress_lower(claimAddress),
         FfiConverterOptionTypeWebHook.lower(webhook),$0
     )
@@ -4527,6 +4590,24 @@ open func restorableLbtcToBtcSwaps(swapList: SwapList, claimAddress: BitcoinAddr
         FfiConverterTypeSwapList_lower(swapList),
         FfiConverterTypeBitcoinAddress_lower(claimAddress),
         FfiConverterTypeAddress_lower(refundAddress),$0
+    )
+})
+}
+    
+    /**
+     * From the swaps returned by the boltz api via [`BoltzSession::swap_restore`]:
+     *
+     * - filter the reverse BTC swaps
+     * - add information from the session
+     * - return typed data
+     *
+     * The claim address doesn't need to be the same used when creating the swap.
+     */
+open func restorableReverseBtcSwaps(swapList: SwapList, claimAddress: BitcoinAddress)throws  -> [String]  {
+    return try  FfiConverterSequenceString.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_boltzsession_restorable_reverse_btc_swaps(self.uniffiClonePointer(),
+        FfiConverterTypeSwapList_lower(swapList),
+        FfiConverterTypeBitcoinAddress_lower(claimAddress),$0
     )
 })
 }
@@ -9709,6 +9790,8 @@ public protocol PreparePayResponseProtocol: AnyObject, Sendable {
      */
     func fee() throws  -> UInt64?
     
+    func lockupAddress() throws  -> String
+    
     /**
      * The txid of the user lockup transaction of the swap.
      */
@@ -9831,6 +9914,13 @@ open func completePay()throws  -> Bool  {
 open func fee()throws  -> UInt64?  {
     return try  FfiConverterOptionUInt64.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
     uniffi_lwk_fn_method_preparepayresponse_fee(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func lockupAddress()throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_preparepayresponse_lockup_address(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -10207,7 +10297,18 @@ public protocol PsetBalanceProtocol: AnyObject, Sendable {
     
     func balances()  -> [AssetId: Int64]
     
+    /**
+     * Fee paid by this transaction.
+     *
+     * Warning: if there are multiple assets paying fees this function can return an incorrect value.
+     *
+     * Deprecated: use `fees_in(asset_id)` or `fees()` instead.
+     */
     func fee()  -> UInt64
+    
+    func fees()  -> [AssetId: UInt64]
+    
+    func feesIn(asset: AssetId)  -> UInt64
     
     func recipients()  -> [Recipient]
     
@@ -10271,9 +10372,31 @@ open func balances() -> [AssetId: Int64]  {
 })
 }
     
+    /**
+     * Fee paid by this transaction.
+     *
+     * Warning: if there are multiple assets paying fees this function can return an incorrect value.
+     *
+     * Deprecated: use `fees_in(asset_id)` or `fees()` instead.
+     */
 open func fee() -> UInt64  {
     return try!  FfiConverterUInt64.lift(try! rustCall() {
     uniffi_lwk_fn_method_psetbalance_fee(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func fees() -> [AssetId: UInt64]  {
+    return try!  FfiConverterDictionaryTypeAssetIdUInt64.lift(try! rustCall() {
+    uniffi_lwk_fn_method_psetbalance_fees(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func feesIn(asset: AssetId) -> UInt64  {
+    return try!  FfiConverterUInt64.lift(try! rustCall() {
+    uniffi_lwk_fn_method_psetbalance_fees_in(self.uniffiClonePointer(),
+        FfiConverterTypeAssetId_lower(asset),$0
     )
 })
 }
@@ -16364,16 +16487,32 @@ public struct EsploraClientBuilder {
     public var concurrency: UInt32?
     public var timeout: UInt8?
     public var utxoOnly: Bool
+    /**
+     * HTTP headers to set on each request, for example to authenticate with a backend
+     */
+    public var headers: [String: String]?
+    /**
+     * Token provider for authenticated Esplora and Waterfalls backends
+     */
+    public var tokenProvider: TokenProvider?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(baseUrl: String, network: Network, waterfalls: Bool = false, concurrency: UInt32? = nil, timeout: UInt8? = nil, utxoOnly: Bool = false) {
+    public init(baseUrl: String, network: Network, waterfalls: Bool = false, concurrency: UInt32? = nil, timeout: UInt8? = nil, utxoOnly: Bool = false, 
+        /**
+         * HTTP headers to set on each request, for example to authenticate with a backend
+         */headers: [String: String]? = nil, 
+        /**
+         * Token provider for authenticated Esplora and Waterfalls backends
+         */tokenProvider: TokenProvider? = nil) {
         self.baseUrl = baseUrl
         self.network = network
         self.waterfalls = waterfalls
         self.concurrency = concurrency
         self.timeout = timeout
         self.utxoOnly = utxoOnly
+        self.headers = headers
+        self.tokenProvider = tokenProvider
     }
 }
 
@@ -16395,7 +16534,9 @@ public struct FfiConverterTypeEsploraClientBuilder: FfiConverterRustBuffer {
                 waterfalls: FfiConverterBool.read(from: &buf), 
                 concurrency: FfiConverterOptionUInt32.read(from: &buf), 
                 timeout: FfiConverterOptionUInt8.read(from: &buf), 
-                utxoOnly: FfiConverterBool.read(from: &buf)
+                utxoOnly: FfiConverterBool.read(from: &buf), 
+                headers: FfiConverterOptionDictionaryStringString.read(from: &buf), 
+                tokenProvider: FfiConverterOptionTypeTokenProvider.read(from: &buf)
         )
     }
 
@@ -16406,6 +16547,8 @@ public struct FfiConverterTypeEsploraClientBuilder: FfiConverterRustBuffer {
         FfiConverterOptionUInt32.write(value.concurrency, into: &buf)
         FfiConverterOptionUInt8.write(value.timeout, into: &buf)
         FfiConverterBool.write(value.utxoOnly, into: &buf)
+        FfiConverterOptionDictionaryStringString.write(value.headers, into: &buf)
+        FfiConverterOptionTypeTokenProvider.write(value.tokenProvider, into: &buf)
     }
 }
 
@@ -17047,6 +17190,8 @@ public enum LwkError: Swift.Error {
     case ObjectConsumed
     case BoltzBackendHttpError(status: UInt16, error: String?
     )
+    case EsploraHttpError(url: String, status: UInt16, body: String?
+    )
 }
 
 
@@ -17087,6 +17232,11 @@ public struct FfiConverterTypeLwkError: FfiConverterRustBuffer {
         case 8: return .BoltzBackendHttpError(
             status: try FfiConverterUInt16.read(from: &buf), 
             error: try FfiConverterOptionString.read(from: &buf)
+            )
+        case 9: return .EsploraHttpError(
+            url: try FfiConverterString.read(from: &buf), 
+            status: try FfiConverterUInt16.read(from: &buf), 
+            body: try FfiConverterOptionString.read(from: &buf)
             )
 
          default: throw UniffiInternalError.unexpectedEnumCase
@@ -17141,6 +17291,13 @@ public struct FfiConverterTypeLwkError: FfiConverterRustBuffer {
             writeInt(&buf, Int32(8))
             FfiConverterUInt16.write(status, into: &buf)
             FfiConverterOptionString.write(error, into: &buf)
+            
+        
+        case let .EsploraHttpError(url,status,body):
+            writeInt(&buf, Int32(9))
+            FfiConverterString.write(url, into: &buf)
+            FfiConverterUInt16.write(status, into: &buf)
+            FfiConverterOptionString.write(body, into: &buf)
             
         }
     }
@@ -17555,6 +17712,119 @@ public func FfiConverterTypeSwapAsset_lower(_ value: SwapAsset) -> RustBuffer {
 
 
 extension SwapAsset: Equatable, Hashable {}
+
+
+
+
+
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * Provider of a token for authenticated Esplora and Waterfalls backends.
+ *
+ * Some Esplora servers, particularly enterprise deployments like
+ * [Blockstream Enterprise](https://blockstream.info/explorer-api), require authentication for
+ * access.
+ */
+
+public enum TokenProvider {
+    
+    /**
+     * No token is needed
+     */
+    case none
+    /**
+     * A static token is used as-is for every request
+     */
+    case `static`(
+        /**
+         * The token value
+         */token: String
+    )
+    /**
+     * An OAuth2 token is obtained from the Blockstream API and refreshed automatically
+     */
+    case blockstream(
+        /**
+         * The url to get the token from
+         */url: String, 
+        /**
+         * The client ID
+         */clientId: String, 
+        /**
+         * The client secret
+         */clientSecret: String
+    )
+}
+
+
+#if compiler(>=6)
+extension TokenProvider: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeTokenProvider: FfiConverterRustBuffer {
+    typealias SwiftType = TokenProvider
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TokenProvider {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .none
+        
+        case 2: return .`static`(token: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 3: return .blockstream(url: try FfiConverterString.read(from: &buf), clientId: try FfiConverterString.read(from: &buf), clientSecret: try FfiConverterString.read(from: &buf)
+        )
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: TokenProvider, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .none:
+            writeInt(&buf, Int32(1))
+        
+        
+        case let .`static`(token):
+            writeInt(&buf, Int32(2))
+            FfiConverterString.write(token, into: &buf)
+            
+        
+        case let .blockstream(url,clientId,clientSecret):
+            writeInt(&buf, Int32(3))
+            FfiConverterString.write(url, into: &buf)
+            FfiConverterString.write(clientId, into: &buf)
+            FfiConverterString.write(clientSecret, into: &buf)
+            
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTokenProvider_lift(_ buf: RustBuffer) throws -> TokenProvider {
+    return try FfiConverterTypeTokenProvider.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTokenProvider_lower(_ value: TokenProvider) -> RustBuffer {
+    return FfiConverterTypeTokenProvider.lower(value)
+}
+
+
+extension TokenProvider: Equatable, Hashable {}
 
 
 
@@ -18188,6 +18458,30 @@ fileprivate struct FfiConverterOptionTypeLiquidBip21: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionTypeTokenProvider: FfiConverterRustBuffer {
+    typealias SwiftType = TokenProvider?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeTokenProvider.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeTokenProvider.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionSequenceTypeAssetId: FfiConverterRustBuffer {
     typealias SwiftType = [AssetId]?
 
@@ -18204,6 +18498,30 @@ fileprivate struct FfiConverterOptionSequenceTypeAssetId: FfiConverterRustBuffer
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterSequenceTypeAssetId.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionDictionaryStringString: FfiConverterRustBuffer {
+    typealias SwiftType = [String: String]?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterDictionaryStringString.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterDictionaryStringString.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -18982,6 +19300,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_boltzsession_btc_to_lbtc() != 27295) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_lwk_checksum_method_boltzsession_btc_to_ln() != 42316) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_lwk_checksum_method_boltzsession_completed_swap_ids() != 32553) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -18998,6 +19319,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_boltzsession_lbtc_to_btc() != 24979) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_boltzsession_ln_to_btc() != 6772) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_boltzsession_next_index_to_use() != 9036) {
@@ -19028,6 +19352,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_boltzsession_restorable_lbtc_to_btc_swaps() != 47519) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_boltzsession_restorable_reverse_btc_swaps() != 35288) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_boltzsession_restorable_reverse_swaps() != 54384) {
@@ -19384,6 +19711,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_preparepayresponse_fee() != 46693) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_lwk_checksum_method_preparepayresponse_lockup_address() != 47201) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_lwk_checksum_method_preparepayresponse_lockup_txid() != 24205) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -19429,7 +19759,13 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_psetbalance_balances() != 30248) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_psetbalance_fee() != 45919) {
+    if (uniffi_lwk_checksum_method_psetbalance_fee() != 31768) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_psetbalance_fees() != 16881) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_psetbalance_fees_in() != 37794) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_psetbalance_recipients() != 28110) {
@@ -19871,6 +20207,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_constructor_amp2_new_testnet() != 61837) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_constructor_amp2descriptor_new_with_custom_descriptor() != 53884) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_constructor_anyclient_from_electrum() != 61969) {
