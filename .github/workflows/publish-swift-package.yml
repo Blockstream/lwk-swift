@@ -2,10 +2,16 @@ name: Publish Swift Bindings
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: 'LWK repo release (MAJOR.MINOR.PATCH)'
+      lwk_version:
+        description: 'LWK repo release (bindings_MAJOR.MINOR.PATCH)'
         required: true
         type: string
+        default: 'main'
+      tag_version:
+        description: 'Tag to build (MAJOR.MINOR.PATCH)'
+        required: true
+        type: string
+        default: 'main'
 
 jobs:
   build-tag-release:
@@ -16,7 +22,7 @@ jobs:
         run: env
       - name: Set release version
         run: |
-          echo "VERSION=$(echo ${{ inputs.version }} | sed 's/bindings_//')" >> $GITHUB_ENV
+          echo "VERSION=${{ inputs.tag_version }}" >> $GITHUB_ENV
       - name: Version
         run: |
           echo "New tag: ${VERSION}"
@@ -39,7 +45,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: Blockstream/lwk
-          ref: ${{ inputs.version }}
+          ref: ${{ inputs.lwk_version }}
           path: build
       - uses: Swatinem/rust-cache@v2
       - name: Add MARKETING_VERSION to project.yml
