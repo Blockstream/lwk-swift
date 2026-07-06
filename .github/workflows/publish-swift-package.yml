@@ -6,7 +6,7 @@ on:
         description: 'LWK repo release (bindings_MAJOR.MINOR.PATCH)'
         required: true
         type: string
-        default: 'main'
+        default: 'master'
       tag_version:
         description: 'Tag to build (MAJOR.MINOR.PATCH)'
         required: true
