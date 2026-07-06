@@ -2743,6 +2743,16 @@ public static func newBip84() -> Bip  {
 }
     
     /**
+     * For P2TR wallets
+     */
+public static func newBip86() -> Bip  {
+    return try!  FfiConverterTypeBip_lift(try! rustCall() {
+    uniffi_lwk_fn_constructor_bip_new_bip86($0
+    )
+})
+}
+    
+    /**
      * For multisig wallets
      */
 public static func newBip87() -> Bip  {
@@ -4202,6 +4212,17 @@ public protocol BoltzSessionProtocol: AnyObject, Sendable {
     /**
      * From the swaps returned by the boltz api via [`BoltzSession::swap_restore`]:
      *
+     * - filter the BTC submarine swaps
+     * - add information from the session
+     * - return typed data
+     *
+     * The refund address doesn't need to be the same used when creating the swap.
+     */
+    func restorableSubmarineBtcSwaps(swapList: SwapList, refundAddress: BitcoinAddress) throws  -> [String]
+    
+    /**
+     * From the swaps returned by the boltz api via [`BoltzSession::swap_restore`]:
+     *
      * - filter the submarine swaps
      * - add information from the session
      * - return typed data
@@ -4211,17 +4232,29 @@ public protocol BoltzSessionProtocol: AnyObject, Sendable {
     func restorableSubmarineSwaps(swapList: SwapList, refundAddress: Address) throws  -> [String]
     
     /**
-     * Restore an invoice flow from its serialized data see `InvoiceResponse::serialize`
+     * Restore an invoice flow from its serialized data see `InvoiceResponse::serialize`.
+     *
+     * After restoring a non-terminal swap, call `InvoiceResponse::advance` promptly, preferably
+     * before restoring many other swaps on the same session, so websocket updates are consumed
+     * before the bounded broadcast buffer fills.
      */
     func restoreInvoice(data: String) throws  -> InvoiceResponse
     
     /**
-     * Restore an onchain swap from its serialized data see `LockupResponse::serialize`
+     * Restore an onchain swap from its serialized data see `LockupResponse::serialize`.
+     *
+     * After restoring a non-terminal swap, call `LockupResponse::advance` promptly, preferably
+     * before restoring many other swaps on the same session, so websocket updates are consumed
+     * before the bounded broadcast buffer fills.
      */
     func restoreLockup(data: String) throws  -> LockupResponse
     
     /**
-     * Restore a payment from its serialized data see `PreparePayResponse::serialize`
+     * Restore a payment from its serialized data see `PreparePayResponse::serialize`.
+     *
+     * After restoring a non-terminal swap, call `PreparePayResponse::advance` promptly,
+     * preferably before restoring many other swaps on the same session, so websocket updates are
+     * consumed before the bounded broadcast buffer fills.
      */
     func restorePreparePay(data: String) throws  -> PreparePayResponse
     
@@ -4633,6 +4666,24 @@ open func restorableReverseSwaps(swapList: SwapList, claimAddress: Address)throw
     /**
      * From the swaps returned by the boltz api via [`BoltzSession::swap_restore`]:
      *
+     * - filter the BTC submarine swaps
+     * - add information from the session
+     * - return typed data
+     *
+     * The refund address doesn't need to be the same used when creating the swap.
+     */
+open func restorableSubmarineBtcSwaps(swapList: SwapList, refundAddress: BitcoinAddress)throws  -> [String]  {
+    return try  FfiConverterSequenceString.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_boltzsession_restorable_submarine_btc_swaps(self.uniffiClonePointer(),
+        FfiConverterTypeSwapList_lower(swapList),
+        FfiConverterTypeBitcoinAddress_lower(refundAddress),$0
+    )
+})
+}
+    
+    /**
+     * From the swaps returned by the boltz api via [`BoltzSession::swap_restore`]:
+     *
      * - filter the submarine swaps
      * - add information from the session
      * - return typed data
@@ -4649,7 +4700,11 @@ open func restorableSubmarineSwaps(swapList: SwapList, refundAddress: Address)th
 }
     
     /**
-     * Restore an invoice flow from its serialized data see `InvoiceResponse::serialize`
+     * Restore an invoice flow from its serialized data see `InvoiceResponse::serialize`.
+     *
+     * After restoring a non-terminal swap, call `InvoiceResponse::advance` promptly, preferably
+     * before restoring many other swaps on the same session, so websocket updates are consumed
+     * before the bounded broadcast buffer fills.
      */
 open func restoreInvoice(data: String)throws  -> InvoiceResponse  {
     return try  FfiConverterTypeInvoiceResponse_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
@@ -4660,7 +4715,11 @@ open func restoreInvoice(data: String)throws  -> InvoiceResponse  {
 }
     
     /**
-     * Restore an onchain swap from its serialized data see `LockupResponse::serialize`
+     * Restore an onchain swap from its serialized data see `LockupResponse::serialize`.
+     *
+     * After restoring a non-terminal swap, call `LockupResponse::advance` promptly, preferably
+     * before restoring many other swaps on the same session, so websocket updates are consumed
+     * before the bounded broadcast buffer fills.
      */
 open func restoreLockup(data: String)throws  -> LockupResponse  {
     return try  FfiConverterTypeLockupResponse_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
@@ -4671,7 +4730,11 @@ open func restoreLockup(data: String)throws  -> LockupResponse  {
 }
     
     /**
-     * Restore a payment from its serialized data see `PreparePayResponse::serialize`
+     * Restore a payment from its serialized data see `PreparePayResponse::serialize`.
+     *
+     * After restoring a non-terminal swap, call `PreparePayResponse::advance` promptly,
+     * preferably before restoring many other swaps on the same session, so websocket updates are
+     * consumed before the bounded broadcast buffer fills.
      */
 open func restorePreparePay(data: String)throws  -> PreparePayResponse  {
     return try  FfiConverterTypePreparePayResponse_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
@@ -15280,6 +15343,214 @@ public func FfiConverterTypeWalletTxOut_lower(_ value: WalletTxOut) -> UnsafeMut
 
 
 
+/**
+ * A blockchain backend implementation based on the
+ * [Waterfalls HTTP API](https://github.com/RCasatta/waterfalls).
+ */
+public protocol WaterfallsClientProtocol: AnyObject, Sendable {
+    
+    /**
+     * Broadcast a transaction to the network so that a miner can include it in a block.
+     */
+    func broadcast(tx: Transaction) throws  -> Txid
+    
+    /**
+     * Scan the blockchain for the scripts generated by a watch-only wallet
+     */
+    func fullScan(wollet: Wollet) throws  -> Update?
+    
+    /**
+     * Scan the blockchain for the scripts generated by a watch-only wallet up to a specified derivation index
+     */
+    func fullScanToIndex(wollet: Wollet, index: UInt32) throws  -> Update?
+    
+    /**
+     * See [`BlockchainBackend::tip`]
+     */
+    func tip() throws  -> BlockHeader
+    
+}
+/**
+ * A blockchain backend implementation based on the
+ * [Waterfalls HTTP API](https://github.com/RCasatta/waterfalls).
+ */
+open class WaterfallsClient: WaterfallsClientProtocol, @unchecked Sendable {
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_lwk_fn_clone_waterfallsclient(self.pointer, $0) }
+    }
+    /**
+     * Construct a Waterfalls Client
+     */
+public convenience init(url: String, network: Network)throws  {
+    let pointer =
+        try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_constructor_waterfallsclient_new(
+        FfiConverterString.lower(url),
+        FfiConverterTypeNetwork_lower(network),$0
+    )
+}
+    self.init(unsafeFromRawPointer: pointer)
+}
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_lwk_fn_free_waterfallsclient(pointer, $0) }
+    }
+
+    
+    /**
+     * Construct a Waterfalls Client from a `WaterfallsClientBuilder`
+     */
+public static func fromBuilder(builder: WaterfallsClientBuilder)throws  -> WaterfallsClient  {
+    return try  FfiConverterTypeWaterfallsClient_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_constructor_waterfallsclient_from_builder(
+        FfiConverterTypeWaterfallsClientBuilder_lower(builder),$0
+    )
+})
+}
+    
+
+    
+    /**
+     * Broadcast a transaction to the network so that a miner can include it in a block.
+     */
+open func broadcast(tx: Transaction)throws  -> Txid  {
+    return try  FfiConverterTypeTxid_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_waterfallsclient_broadcast(self.uniffiClonePointer(),
+        FfiConverterTypeTransaction_lower(tx),$0
+    )
+})
+}
+    
+    /**
+     * Scan the blockchain for the scripts generated by a watch-only wallet
+     */
+open func fullScan(wollet: Wollet)throws  -> Update?  {
+    return try  FfiConverterOptionTypeUpdate.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_waterfallsclient_full_scan(self.uniffiClonePointer(),
+        FfiConverterTypeWollet_lower(wollet),$0
+    )
+})
+}
+    
+    /**
+     * Scan the blockchain for the scripts generated by a watch-only wallet up to a specified derivation index
+     */
+open func fullScanToIndex(wollet: Wollet, index: UInt32)throws  -> Update?  {
+    return try  FfiConverterOptionTypeUpdate.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_waterfallsclient_full_scan_to_index(self.uniffiClonePointer(),
+        FfiConverterTypeWollet_lower(wollet),
+        FfiConverterUInt32.lower(index),$0
+    )
+})
+}
+    
+    /**
+     * See [`BlockchainBackend::tip`]
+     */
+open func tip()throws  -> BlockHeader  {
+    return try  FfiConverterTypeBlockHeader_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_waterfallsclient_tip(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeWaterfallsClient: FfiConverter {
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = WaterfallsClient
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> WaterfallsClient {
+        return WaterfallsClient(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: WaterfallsClient) -> UnsafeMutableRawPointer {
+        return value.uniffiClonePointer()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> WaterfallsClient {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: WaterfallsClient, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeWaterfallsClient_lift(_ pointer: UnsafeMutableRawPointer) throws -> WaterfallsClient {
+    return try FfiConverterTypeWaterfallsClient.lift(pointer)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeWaterfallsClient_lower(_ value: WaterfallsClient) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeWaterfallsClient.lower(value)
+}
+
+
+
+
+
+
 public protocol WebHookProtocol: AnyObject, Sendable {
     
 }
@@ -16910,6 +17181,93 @@ public func FfiConverterTypeQuote_lift(_ buf: RustBuffer) throws -> Quote {
 #endif
 public func FfiConverterTypeQuote_lower(_ value: Quote) -> RustBuffer {
     return FfiConverterTypeQuote.lower(value)
+}
+
+
+/**
+ * A builder for the `WaterfallsClient`
+ */
+public struct WaterfallsClientBuilder {
+    public var baseUrl: String
+    public var network: Network
+    public var concurrency: UInt32?
+    public var timeout: UInt8?
+    public var utxoOnly: Bool
+    /**
+     * HTTP headers to set on each request, for example to authenticate with a backend
+     */
+    public var headers: [String: String]?
+    /**
+     * Token provider for authenticated Waterfalls backends
+     */
+    public var tokenProvider: TokenProvider?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(baseUrl: String, network: Network, concurrency: UInt32? = nil, timeout: UInt8? = nil, utxoOnly: Bool = false, 
+        /**
+         * HTTP headers to set on each request, for example to authenticate with a backend
+         */headers: [String: String]? = nil, 
+        /**
+         * Token provider for authenticated Waterfalls backends
+         */tokenProvider: TokenProvider? = nil) {
+        self.baseUrl = baseUrl
+        self.network = network
+        self.concurrency = concurrency
+        self.timeout = timeout
+        self.utxoOnly = utxoOnly
+        self.headers = headers
+        self.tokenProvider = tokenProvider
+    }
+}
+
+#if compiler(>=6)
+extension WaterfallsClientBuilder: Sendable {}
+#endif
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeWaterfallsClientBuilder: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> WaterfallsClientBuilder {
+        return
+            try WaterfallsClientBuilder(
+                baseUrl: FfiConverterString.read(from: &buf), 
+                network: FfiConverterTypeNetwork.read(from: &buf), 
+                concurrency: FfiConverterOptionUInt32.read(from: &buf), 
+                timeout: FfiConverterOptionUInt8.read(from: &buf), 
+                utxoOnly: FfiConverterBool.read(from: &buf), 
+                headers: FfiConverterOptionDictionaryStringString.read(from: &buf), 
+                tokenProvider: FfiConverterOptionTypeTokenProvider.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: WaterfallsClientBuilder, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.baseUrl, into: &buf)
+        FfiConverterTypeNetwork.write(value.network, into: &buf)
+        FfiConverterOptionUInt32.write(value.concurrency, into: &buf)
+        FfiConverterOptionUInt8.write(value.timeout, into: &buf)
+        FfiConverterBool.write(value.utxoOnly, into: &buf)
+        FfiConverterOptionDictionaryStringString.write(value.headers, into: &buf)
+        FfiConverterOptionTypeTokenProvider.write(value.tokenProvider, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeWaterfallsClientBuilder_lift(_ buf: RustBuffer) throws -> WaterfallsClientBuilder {
+    return try FfiConverterTypeWaterfallsClientBuilder.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeWaterfallsClientBuilder_lower(_ value: WaterfallsClientBuilder) -> RustBuffer {
+    return FfiConverterTypeWaterfallsClientBuilder.lower(value)
 }
 
 // Note that we don't yet support `indirect` for enums.
@@ -19360,16 +19718,19 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_boltzsession_restorable_reverse_swaps() != 54384) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_lwk_checksum_method_boltzsession_restorable_submarine_btc_swaps() != 6672) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_lwk_checksum_method_boltzsession_restorable_submarine_swaps() != 29803) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_boltzsession_restore_invoice() != 56233) {
+    if (uniffi_lwk_checksum_method_boltzsession_restore_invoice() != 7779) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_boltzsession_restore_lockup() != 29841) {
+    if (uniffi_lwk_checksum_method_boltzsession_restore_lockup() != 34881) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_boltzsession_restore_prepare_pay() != 43475) {
+    if (uniffi_lwk_checksum_method_boltzsession_restore_prepare_pay() != 22654) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_boltzsession_set_next_index_to_use() != 46243) {
@@ -20104,6 +20465,18 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_wallettxout_wildcard_index() != 44054) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_lwk_checksum_method_waterfallsclient_broadcast() != 7154) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_waterfallsclient_full_scan() != 7888) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_waterfallsclient_full_scan_to_index() != 12641) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_waterfallsclient_tip() != 38774) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_lwk_checksum_method_wollet_add_details() != 42615) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -20231,6 +20604,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_constructor_bip_new_bip84() != 26707) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_constructor_bip_new_bip86() != 42046) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_constructor_bip_new_bip87() != 60988) {
@@ -20411,6 +20787,12 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_constructor_valueblindingfactor_zero() != 49915) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_constructor_waterfallsclient_from_builder() != 2573) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_constructor_waterfallsclient_new() != 26053) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_constructor_webhook_new() != 14880) {
