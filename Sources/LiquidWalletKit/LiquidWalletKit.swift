@@ -12125,6 +12125,11 @@ public protocol SignerProtocol: AnyObject, Sendable {
     func singlesigDesc(scriptVariant: Singlesig, blindingVariant: DescriptorBlindingKey) throws  -> WolletDescriptor
     
     /**
+     * Return the signer fingerprint
+     */
+    func slip77MasterBlindingKey() throws  -> String
+    
+    /**
      * Return the witness public key hash, slip77 descriptor of this signer
      */
     func wpkhSlip77Descriptor() throws  -> WolletDescriptor
@@ -12319,6 +12324,16 @@ open func singlesigDesc(scriptVariant: Singlesig, blindingVariant: DescriptorBli
     uniffi_lwk_fn_method_signer_singlesig_desc(self.uniffiClonePointer(),
         FfiConverterTypeSinglesig_lower(scriptVariant),
         FfiConverterTypeDescriptorBlindingKey_lower(blindingVariant),$0
+    )
+})
+}
+    
+    /**
+     * Return the signer fingerprint
+     */
+open func slip77MasterBlindingKey()throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_signer_slip77_master_blinding_key(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -16665,6 +16680,27 @@ public convenience init(descriptor: String)throws  {
     }
 
     
+    /**
+     * Descriptor from xpub
+     *
+     * This should be used when the xpub is obtained from a signer
+     * (e.g. Jade) managed outside LWK.
+     *
+     * If master blinding key is SLIP77, it must be wrapped in "slip77(...)"
+     */
+public static func fromXpub(network: Network, accountType: String, accountNum: UInt32, masterBlindingKey: String, fingerprint: String, xpub: String)throws  -> WolletDescriptor  {
+    return try  FfiConverterTypeWolletDescriptor_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_constructor_wolletdescriptor_from_xpub(
+        FfiConverterTypeNetwork_lower(network),
+        FfiConverterString.lower(accountType),
+        FfiConverterUInt32.lower(accountNum),
+        FfiConverterString.lower(masterBlindingKey),
+        FfiConverterString.lower(fingerprint),
+        FfiConverterString.lower(xpub),$0
+    )
+})
+}
+    
 
     
     /**
@@ -19318,6 +19354,31 @@ fileprivate struct FfiConverterOptionTypeAssetId: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterSequenceUInt32: FfiConverterRustBuffer {
+    typealias SwiftType = [UInt32]
+
+    public static func write(_ value: [UInt32], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterUInt32.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [UInt32] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [UInt32]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterUInt32.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
     typealias SwiftType = [String]
 
@@ -19834,6 +19895,18 @@ public func deriveTokenId(txin: TxIn, contract: Contract)throws  -> AssetId  {
 })
 }
 /**
+ * Get the derivation path for an account
+ */
+public func getPath(network: Network, accountType: String, accountNum: UInt32)throws  -> [UInt32]  {
+    return try  FfiConverterSequenceUInt32.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_func_get_path(
+        FfiConverterTypeNetwork_lower(network),
+        FfiConverterString.lower(accountType),
+        FfiConverterUInt32.lower(accountNum),$0
+    )
+})
+}
+/**
  * Whether a script pubkey is provably segwit
  */
 public func isProvablySegwit(scriptPubkey: Script, redeemScript: Script?) -> Bool  {
@@ -19864,6 +19937,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_func_derive_token_id() != 30312) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_func_get_path() != 14693) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_func_is_provably_segwit() != 18100) {
@@ -20667,6 +20743,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_signer_singlesig_desc() != 29930) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_lwk_checksum_method_signer_slip77_master_blinding_key() != 55499) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_lwk_checksum_method_signer_wpkh_slip77_descriptor() != 50399) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -21220,6 +21299,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_constructor_wolletbuilder_new() != 41459) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_constructor_wolletdescriptor_from_xpub() != 10212) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_constructor_wolletdescriptor_new() != 61281) {
