@@ -23,9 +23,24 @@ jobs:
     steps:
       - name: ENV
         run: env
-      - name: Set release version
+      - name: Validate inputs
+        env:
+          TAG_VERSION: ${{ inputs.tag_version }}
+          LWK_VERSION: ${{ inputs.lwk_version }}
         run: |
-          echo "VERSION=${{ inputs.tag_version }}" >> $GITHUB_ENV
+          if ! [[ "$TAG_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::tag_version must match MAJOR.MINOR.PATCH (got '$TAG_VERSION')"
+            exit 1
+          fi
+          if ! [[ "$LWK_VERSION" =~ ^[A-Za-z0-9_./-]+$ ]]; then
+            echo "::error::lwk_version contains invalid characters (got '$LWK_VERSION')"
+            exit 1
+          fi
+      - name: Set release version
+        env:
+          TAG_VERSION: ${{ inputs.tag_version }}
+        run: |
+          echo "VERSION=$TAG_VERSION" >> "$GITHUB_ENV"
       - name: Version
         run: |
           echo "New tag: ${VERSION}"
@@ -81,7 +96,7 @@ jobs:
         run: |
           git add Package.swift Sources lwkFFI.podspec LiquidWalletKit.podspec
           git commit -m "Bump Liquid Wallet Kit to version ${VERSION}"
-          git tag ${VERSION} -m "${VERSION}"
+          git tag "${VERSION}" -m "${VERSION}"
           git push
           git push --tags
       - name: Release and attach XCFramework binary artifact
