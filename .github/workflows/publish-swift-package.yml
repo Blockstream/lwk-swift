@@ -30,31 +30,31 @@ jobs:
         run: |
           echo "New tag: ${VERSION}"
       - name: Setup rust toolchain
-        uses: dtolnay/rust-toolchain@1.85.0
+        uses: dtolnay/rust-toolchain@bc540ba06a4ccee415bb241490e0b25ee8e7d315 # 1.85.0
         with:
           targets: x86_64-apple-ios,aarch64-apple-ios,aarch64-apple-ios-sim
       - name: Setup just
-        uses: extractions/setup-just@v2
+        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
         with:
           just-version: 1.5.0  # optional semver specification, otherwise latest
       - name: Install XcodeGen
-        run: brew install xcodegen
+        run: brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/005005ff7c057f713d52db5e16e5a8913cc79c4c/Formula/x/xcodegen.rb # 2.46.0
       - name: Checkout lwk-swift repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Blockstream/lwk-swift
           ref: main
       - name: Checkout lwk repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Blockstream/lwk
           ref: ${{ inputs.lwk_version }}
           path: build
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
       - name: Add MARKETING_VERSION to project.yml
         working-directory: build/lwk_bindings/swift
         run: |
-          brew install yq
+          brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/005005ff7c057f713d52db5e16e5a8913cc79c4c/Formula/y/yq.rb # 4.53.3
           yq e '.targets.lwkFFI.settings.MARKETING_VERSION = env(VERSION)' -i project.yml
           yq e '.targets.lwkFFI.settings.CURRENT_PROJECT_VERSION = "1"' -i project.yml
       - name: Build Swift bindings
@@ -85,7 +85,7 @@ jobs:
           git push
           git push --tags
       - name: Release and attach XCFramework binary artifact
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1.21.0
         with:
           artifacts: "build/target/lwkFFI.xcframework.zip"
           tag: ${{ env.VERSION }}
