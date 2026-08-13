@@ -23,8 +23,6 @@ jobs:
     name: Build, tag, and release the LWK SDK Swift bindings
     runs-on: macos-15
     steps:
-      - name: ENV
-        run: env
       - name: Validate inputs
         env:
           TAG_VERSION: ${{ inputs.tag_version }}
@@ -119,7 +117,7 @@ jobs:
           tag: ${{ env.VERSION }}
           token: ${{ secrets.GITHUB_TOKEN }}
           name: ${{ env.VERSION }}
-          prerelease: true
+          prerelease: false
           body: |
             Built from Blockstream/lwk@${{ env.LWK_COMMIT }}
             XCFramework checksum (`swift package compute-checksum`): `${{ env.XCF_CHECKSUM }}`
