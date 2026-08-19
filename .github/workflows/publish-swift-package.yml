@@ -54,8 +54,15 @@ jobs:
         uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
         with:
           just-version: 1.5.0  # optional semver specification, otherwise latest
-      - name: Install XcodeGen
-        run: brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/005005ff7c057f713d52db5e16e5a8913cc79c4c/Formula/x/xcodegen.rb # 2.46.0
+      - name: Install pinned xcodegen (2.46.0)
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+        run: |
+          brew tap-new local/pinned
+          curl -fsSL -o "$(brew --repo local/pinned)/Formula/xcodegen.rb" \
+            https://raw.githubusercontent.com/Homebrew/homebrew-core/005005ff7c057f713d52db5e16e5a8913cc79c4c/Formula/x/xcodegen.rb
+          brew install local/pinned/xcodegen
+          xcodegen --version
       - name: Checkout lwk-swift repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -75,7 +82,6 @@ jobs:
       - name: Add MARKETING_VERSION to project.yml
         working-directory: build/lwk_bindings/swift
         run: |
-          brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/005005ff7c057f713d52db5e16e5a8913cc79c4c/Formula/y/yq.rb # 4.53.3
           yq e '.targets.lwkFFI.settings.MARKETING_VERSION = env(VERSION)' -i project.yml
           yq e '.targets.lwkFFI.settings.CURRENT_PROJECT_VERSION = "1"' -i project.yml
       - name: Build Swift bindings
