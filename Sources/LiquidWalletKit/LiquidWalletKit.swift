@@ -1881,6 +1881,31 @@ public protocol Amp2Protocol: AnyObject, Sendable {
     func descriptorFromStr(keyoriginXpub: String, descriptorBlindingKey: String) throws  -> Amp2Descriptor
     
     /**
+     * Create an AMP2 descriptor ELIP153 compliant from a signer
+     */
+    func elip153FromSigner(signer: Signer, account: UInt32) throws  -> Amp2Descriptor
+    
+    /**
+     * Create an AMP2 descriptor ELIP153 compliant from xpub strings.
+     *
+     * This is typically used when the signer is managed outside of LWK.
+     * Derive the user xpub at [`Amp2::elip153_user_path()`] and
+     * the view xpub at [`Amp2::elip153_view_path()`], and pass the
+     * obtained keyorigin_xpub strings here.
+     */
+    func elip153FromStr(userKeyoriginXpub: String, viewKeyoriginXpub: String) throws  -> Amp2Descriptor
+    
+    /**
+     * ELIP153 `USER_PATH = m/purpose'/coin_type'/account'`
+     */
+    func elip153UserPath(account: UInt32) throws  -> DerivationPath
+    
+    /**
+     * ELIP153 `VIEW_PATH = m/purpose'/coin_type'/account'/server_fingerprint_masked'`
+     */
+    func elip153ViewPath(account: UInt32) throws  -> DerivationPath
+    
+    /**
      * Register an AMP2 wallet with the AMP2 server
      */
     func registerWallet(desc: Amp2Descriptor) throws  -> String
@@ -1985,6 +2010,57 @@ open func descriptorFromStr(keyoriginXpub: String, descriptorBlindingKey: String
     uniffi_lwk_fn_method_amp2_descriptor_from_str(self.uniffiClonePointer(),
         FfiConverterString.lower(keyoriginXpub),
         FfiConverterString.lower(descriptorBlindingKey),$0
+    )
+})
+}
+    
+    /**
+     * Create an AMP2 descriptor ELIP153 compliant from a signer
+     */
+open func elip153FromSigner(signer: Signer, account: UInt32)throws  -> Amp2Descriptor  {
+    return try  FfiConverterTypeAmp2Descriptor_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_amp2_elip153_from_signer(self.uniffiClonePointer(),
+        FfiConverterTypeSigner_lower(signer),
+        FfiConverterUInt32.lower(account),$0
+    )
+})
+}
+    
+    /**
+     * Create an AMP2 descriptor ELIP153 compliant from xpub strings.
+     *
+     * This is typically used when the signer is managed outside of LWK.
+     * Derive the user xpub at [`Amp2::elip153_user_path()`] and
+     * the view xpub at [`Amp2::elip153_view_path()`], and pass the
+     * obtained keyorigin_xpub strings here.
+     */
+open func elip153FromStr(userKeyoriginXpub: String, viewKeyoriginXpub: String)throws  -> Amp2Descriptor  {
+    return try  FfiConverterTypeAmp2Descriptor_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_amp2_elip153_from_str(self.uniffiClonePointer(),
+        FfiConverterString.lower(userKeyoriginXpub),
+        FfiConverterString.lower(viewKeyoriginXpub),$0
+    )
+})
+}
+    
+    /**
+     * ELIP153 `USER_PATH = m/purpose'/coin_type'/account'`
+     */
+open func elip153UserPath(account: UInt32)throws  -> DerivationPath  {
+    return try  FfiConverterTypeDerivationPath_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_amp2_elip153_user_path(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(account),$0
+    )
+})
+}
+    
+    /**
+     * ELIP153 `VIEW_PATH = m/purpose'/coin_type'/account'/server_fingerprint_masked'`
+     */
+open func elip153ViewPath(account: UInt32)throws  -> DerivationPath  {
+    return try  FfiConverterTypeDerivationPath_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_amp2_elip153_view_path(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(account),$0
     )
 })
 }
@@ -4095,6 +4171,11 @@ public protocol BoltzSessionProtocol: AnyObject, Sendable {
     func invoice(amount: UInt64, description: String?, claimAddress: Address, webhook: WebHook?) throws  -> InvoiceResponse
     
     /**
+     * Whether the user's lockup output for serialized chain swap data is currently unspent.
+     */
+    func isLockupUnspent(data: String) throws  -> Bool
+    
+    /**
      * Create an onchain swap to convert LBTC to BTC
      */
     func lbtcToBtc(amount: UInt64, refundAddress: Address, claimAddress: BitcoinAddress, webhook: WebHook?) throws  -> LockupResponse
@@ -4452,6 +4533,17 @@ open func invoice(amount: UInt64, description: String?, claimAddress: Address, w
         FfiConverterOptionString.lower(description),
         FfiConverterTypeAddress_lower(claimAddress),
         FfiConverterOptionTypeWebHook.lower(webhook),$0
+    )
+})
+}
+    
+    /**
+     * Whether the user's lockup output for serialized chain swap data is currently unspent.
+     */
+open func isLockupUnspent(data: String)throws  -> Bool  {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_boltzsession_is_lockup_unspent(self.uniffiClonePointer(),
+        FfiConverterString.lower(data),$0
     )
 })
 }
@@ -5186,6 +5278,381 @@ public func FfiConverterTypeCurrencyCode_lower(_ value: CurrencyCode) -> UnsafeM
 
 
 /**
+ * The builder for custom Elements networks
+ */
+public protocol CustomElementsNetworkBuilderProtocol: AnyObject, Sendable {
+    
+    /**
+     * Build the custom Elements `Network`
+     *
+     * Unspecified values are defined as default Liquid regtest parameters
+     */
+    func build() throws  -> Network
+    
+    /**
+     * Specify the genesis block hash, as an hex string
+     */
+    func withGenesisHash(genesisHash: String) throws 
+    
+    /**
+     * Specify the parent-chain genesis block hash, as an hex string
+     */
+    func withParentGenesisHash(parentGenesisHash: String) throws 
+    
+    /**
+     * Specify the policy asset
+     */
+    func withPolicyAsset(policyAsset: AssetId) throws 
+    
+}
+/**
+ * The builder for custom Elements networks
+ */
+open class CustomElementsNetworkBuilder: CustomElementsNetworkBuilderProtocol, @unchecked Sendable {
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_lwk_fn_clone_customelementsnetworkbuilder(self.pointer, $0) }
+    }
+    /**
+     * Construct a builder for custom Elements networks
+     */
+public convenience init() {
+    let pointer =
+        try! rustCall() {
+    uniffi_lwk_fn_constructor_customelementsnetworkbuilder_new($0
+    )
+}
+    self.init(unsafeFromRawPointer: pointer)
+}
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_lwk_fn_free_customelementsnetworkbuilder(pointer, $0) }
+    }
+
+    
+
+    
+    /**
+     * Build the custom Elements `Network`
+     *
+     * Unspecified values are defined as default Liquid regtest parameters
+     */
+open func build()throws  -> Network  {
+    return try  FfiConverterTypeNetwork_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_customelementsnetworkbuilder_build(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Specify the genesis block hash, as an hex string
+     */
+open func withGenesisHash(genesisHash: String)throws   {try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_customelementsnetworkbuilder_with_genesis_hash(self.uniffiClonePointer(),
+        FfiConverterString.lower(genesisHash),$0
+    )
+}
+}
+    
+    /**
+     * Specify the parent-chain genesis block hash, as an hex string
+     */
+open func withParentGenesisHash(parentGenesisHash: String)throws   {try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_customelementsnetworkbuilder_with_parent_genesis_hash(self.uniffiClonePointer(),
+        FfiConverterString.lower(parentGenesisHash),$0
+    )
+}
+}
+    
+    /**
+     * Specify the policy asset
+     */
+open func withPolicyAsset(policyAsset: AssetId)throws   {try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_customelementsnetworkbuilder_with_policy_asset(self.uniffiClonePointer(),
+        FfiConverterTypeAssetId_lower(policyAsset),$0
+    )
+}
+}
+    
+
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeCustomElementsNetworkBuilder: FfiConverter {
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = CustomElementsNetworkBuilder
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> CustomElementsNetworkBuilder {
+        return CustomElementsNetworkBuilder(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: CustomElementsNetworkBuilder) -> UnsafeMutableRawPointer {
+        return value.uniffiClonePointer()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CustomElementsNetworkBuilder {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: CustomElementsNetworkBuilder, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeCustomElementsNetworkBuilder_lift(_ pointer: UnsafeMutableRawPointer) throws -> CustomElementsNetworkBuilder {
+    return try FfiConverterTypeCustomElementsNetworkBuilder.lift(pointer)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeCustomElementsNetworkBuilder_lower(_ value: CustomElementsNetworkBuilder) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeCustomElementsNetworkBuilder.lower(value)
+}
+
+
+
+
+
+
+/**
+ * A BIP32 derivation path
+ */
+public protocol DerivationPathProtocol: AnyObject, Sendable {
+    
+    /**
+     * Return the derivation path as a vector of u32
+     */
+    func toVec()  -> [UInt32]
+    
+}
+/**
+ * A BIP32 derivation path
+ */
+open class DerivationPath: DerivationPathProtocol, @unchecked Sendable {
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_lwk_fn_clone_derivationpath(self.pointer, $0) }
+    }
+    /**
+     * Construct a DerivationPath from its string representation
+     *
+     * For example: "m/84'/1'/0'" or "84h/1h/0h".
+     */
+public convenience init(path: String)throws  {
+    let pointer =
+        try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_constructor_derivationpath_new(
+        FfiConverterString.lower(path),$0
+    )
+}
+    self.init(unsafeFromRawPointer: pointer)
+}
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_lwk_fn_free_derivationpath(pointer, $0) }
+    }
+
+    
+    /**
+     * Construct the account-level derivation path
+     *
+     * `account_type` must be one of "wpkh", "shwpkh", "pkh" or "tr"
+     */
+public static func fromAccount(network: Network, accountType: String, accountNum: UInt32)throws  -> DerivationPath  {
+    return try  FfiConverterTypeDerivationPath_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_constructor_derivationpath_from_account(
+        FfiConverterTypeNetwork_lower(network),
+        FfiConverterString.lower(accountType),
+        FfiConverterUInt32.lower(accountNum),$0
+    )
+})
+}
+    
+    /**
+     * Construct a DerivationPath from a vector of u32
+     */
+public static func fromVec(path: [UInt32]) -> DerivationPath  {
+    return try!  FfiConverterTypeDerivationPath_lift(try! rustCall() {
+    uniffi_lwk_fn_constructor_derivationpath_from_vec(
+        FfiConverterSequenceUInt32.lower(path),$0
+    )
+})
+}
+    
+
+    
+    /**
+     * Return the derivation path as a vector of u32
+     */
+open func toVec() -> [UInt32]  {
+    return try!  FfiConverterSequenceUInt32.lift(try! rustCall() {
+    uniffi_lwk_fn_method_derivationpath_to_vec(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    open var description: String {
+        return try!  FfiConverterString.lift(
+            try! rustCall() {
+    uniffi_lwk_fn_method_derivationpath_uniffi_trait_display(self.uniffiClonePointer(),$0
+    )
+}
+        )
+    }
+
+}
+extension DerivationPath: CustomStringConvertible {}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeDerivationPath: FfiConverter {
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = DerivationPath
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> DerivationPath {
+        return DerivationPath(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: DerivationPath) -> UnsafeMutableRawPointer {
+        return value.uniffiClonePointer()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DerivationPath {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: DerivationPath, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeDerivationPath_lift(_ pointer: UnsafeMutableRawPointer) throws -> DerivationPath {
+    return try FfiConverterTypeDerivationPath.lift(pointer)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeDerivationPath_lower(_ value: DerivationPath) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeDerivationPath.lower(value)
+}
+
+
+
+
+
+
+/**
  * A client to issue TCP requests to an electrum server.
  */
 public protocol ElectrumClientProtocol: AnyObject, Sendable {
@@ -5229,6 +5696,11 @@ public protocol ElectrumClientProtocol: AnyObject, Sendable {
      * Fetch the transaction with the given id
      */
     func getTx(txid: Txid) throws  -> Transaction
+    
+    /**
+     * Whether the descriptor has any tx using the first `gap_limit` addresses (default 20)
+     */
+    func hasTxs(descriptor: WolletDescriptor, gapLimit: UInt32?) throws  -> Bool
     
     /**
      * Ping the Electrum server
@@ -5308,6 +5780,18 @@ public convenience init(electrumUrl: String, tls: Bool, validateDomain: Bool)thr
 
     
     /**
+     * Construct an Electrum client from an `ElectrumClientBuilder`, e.g. to set a token
+     * provider for an authenticated Electrum RPC proxy.
+     */
+public static func fromBuilder(builder: ElectrumClientBuilder)throws  -> ElectrumClient  {
+    return try  FfiConverterTypeElectrumClient_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_constructor_electrumclient_from_builder(
+        FfiConverterTypeElectrumClientBuilder_lower(builder),$0
+    )
+})
+}
+    
+    /**
      * Construct an electrum client from an Electrum URL
      */
 public static func fromUrl(electrumUrl: String)throws  -> ElectrumClient  {
@@ -5381,6 +5865,18 @@ open func getTx(txid: Txid)throws  -> Transaction  {
     return try  FfiConverterTypeTransaction_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
     uniffi_lwk_fn_method_electrumclient_get_tx(self.uniffiClonePointer(),
         FfiConverterTypeTxid_lower(txid),$0
+    )
+})
+}
+    
+    /**
+     * Whether the descriptor has any tx using the first `gap_limit` addresses (default 20)
+     */
+open func hasTxs(descriptor: WolletDescriptor, gapLimit: UInt32?)throws  -> Bool  {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_electrumclient_has_txs(self.uniffiClonePointer(),
+        FfiConverterTypeWolletDescriptor_lower(descriptor),
+        FfiConverterOptionUInt32.lower(gapLimit),$0
     )
 })
 }
@@ -5504,6 +6000,11 @@ public protocol EsploraClientProtocol: AnyObject, Sendable {
      * previously-found transactions from being missed.
      */
     func fullScanToIndex(wollet: Wollet, index: UInt32) throws  -> Update?
+    
+    /**
+     * Whether the descriptor has any tx using the first `gap_limit` addresses (default 20)
+     */
+    func hasTxs(descriptor: WolletDescriptor, gapLimit: UInt32?) throws  -> Bool
     
     /**
      * See [`BlockchainBackend::tip`]
@@ -5654,6 +6155,18 @@ open func fullScanToIndex(wollet: Wollet, index: UInt32)throws  -> Update?  {
     uniffi_lwk_fn_method_esploraclient_full_scan_to_index(self.uniffiClonePointer(),
         FfiConverterTypeWollet_lower(wollet),
         FfiConverterUInt32.lower(index),$0
+    )
+})
+}
+    
+    /**
+     * Whether the descriptor has any tx using the first `gap_limit` addresses (default 20)
+     */
+open func hasTxs(descriptor: WolletDescriptor, gapLimit: UInt32?)throws  -> Bool  {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_esploraclient_has_txs(self.uniffiClonePointer(),
+        FfiConverterTypeWolletDescriptor_lower(descriptor),
+        FfiConverterOptionUInt32.lower(gapLimit),$0
     )
 })
 }
@@ -7022,16 +7535,38 @@ public func FfiConverterTypeIssuance_lower(_ value: Issuance) -> UnsafeMutableRa
 public protocol IssuanceRequestProtocol: AnyObject, Sendable {
     
     /**
-     * Sets the address receiving the issued asset units; if not called, they are sent
-     * to an address of the wallet generating the issuance
+     * Adds an output receiving `satoshi` of the issued asset units
+     *
+     * **Experimental**: this API might change without notice.
+     *
+     * The units are sent to `address` if some, or to an address of the wallet generating the
+     * issuance if none.
+     *
+     * Call this multiple times to split the issued units across several outputs: the amounts of
+     * all the added outputs must sum up to the issued amount, otherwise
+     * [`TxBuilder::add_issuance()`] errors.
+     *
+     * If not called, the issued units are sent to a single address of the wallet generating the
+     * issuance.
      */
-    func addressAsset(address: Address) throws 
+    func addAssetOutput(satoshi: UInt64, address: Address?) throws 
     
     /**
-     * Sets the address receiving the reissuance tokens; if not called, they are sent
-     * to an address of the wallet generating the issuance
+     * Adds an output receiving `satoshi` reissuance tokens
+     *
+     * **Experimental**: this API might change without notice.
+     *
+     * The tokens are sent to `address` if some, or to an address of the wallet generating the
+     * issuance if none.
+     *
+     * Call this multiple times to split the reissuance tokens across several outputs: the amounts
+     * of all the added outputs must sum up to the issued token amount, otherwise
+     * [`TxBuilder::add_issuance()`] errors.
+     *
+     * If not called, the reissuance tokens are sent to a single address of the wallet generating
+     * the issuance.
      */
-    func addressToken(address: Address) throws 
+    func addTokenOutput(satoshi: UInt64, address: Address?) throws 
     
     /**
      * Sets the contract whose metadata will be committed in the generated asset id
@@ -7096,7 +7631,9 @@ open class IssuanceRequest: IssuanceRequestProtocol, @unchecked Sendable {
     }
     /**
      * Construct a builder for an issuance of `satoshi_asset` asset units and `satoshi_token`
-     * reissuance tokens (at least one of the two must be greater than zero)
+     * reissuance tokens
+     *
+     * At least one of the two amounts must be greater than zero.
      */
 public convenience init(satoshiAsset: UInt64, satoshiToken: UInt64) {
     let pointer =
@@ -7121,23 +7658,47 @@ public convenience init(satoshiAsset: UInt64, satoshiToken: UInt64) {
 
     
     /**
-     * Sets the address receiving the issued asset units; if not called, they are sent
-     * to an address of the wallet generating the issuance
+     * Adds an output receiving `satoshi` of the issued asset units
+     *
+     * **Experimental**: this API might change without notice.
+     *
+     * The units are sent to `address` if some, or to an address of the wallet generating the
+     * issuance if none.
+     *
+     * Call this multiple times to split the issued units across several outputs: the amounts of
+     * all the added outputs must sum up to the issued amount, otherwise
+     * [`TxBuilder::add_issuance()`] errors.
+     *
+     * If not called, the issued units are sent to a single address of the wallet generating the
+     * issuance.
      */
-open func addressAsset(address: Address)throws   {try rustCallWithError(FfiConverterTypeLwkError_lift) {
-    uniffi_lwk_fn_method_issuancerequest_address_asset(self.uniffiClonePointer(),
-        FfiConverterTypeAddress_lower(address),$0
+open func addAssetOutput(satoshi: UInt64, address: Address?)throws   {try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_issuancerequest_add_asset_output(self.uniffiClonePointer(),
+        FfiConverterUInt64.lower(satoshi),
+        FfiConverterOptionTypeAddress.lower(address),$0
     )
 }
 }
     
     /**
-     * Sets the address receiving the reissuance tokens; if not called, they are sent
-     * to an address of the wallet generating the issuance
+     * Adds an output receiving `satoshi` reissuance tokens
+     *
+     * **Experimental**: this API might change without notice.
+     *
+     * The tokens are sent to `address` if some, or to an address of the wallet generating the
+     * issuance if none.
+     *
+     * Call this multiple times to split the reissuance tokens across several outputs: the amounts
+     * of all the added outputs must sum up to the issued token amount, otherwise
+     * [`TxBuilder::add_issuance()`] errors.
+     *
+     * If not called, the reissuance tokens are sent to a single address of the wallet generating
+     * the issuance.
      */
-open func addressToken(address: Address)throws   {try rustCallWithError(FfiConverterTypeLwkError_lift) {
-    uniffi_lwk_fn_method_issuancerequest_address_token(self.uniffiClonePointer(),
-        FfiConverterTypeAddress_lower(address),$0
+open func addTokenOutput(satoshi: UInt64, address: Address?)throws   {try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_issuancerequest_add_token_output(self.uniffiClonePointer(),
+        FfiConverterUInt64.lower(satoshi),
+        FfiConverterOptionTypeAddress.lower(address),$0
     )
 }
 }
@@ -7553,6 +8114,11 @@ public protocol LockupResponseProtocol: AnyObject, Sendable {
      */
     func fee() throws  -> UInt64?
     
+    /**
+     * Whether the user's lockup output is currently unspent.
+     */
+    func isLockupUnspent() throws  -> Bool
+    
     func lockupAddress() throws  -> String
     
     /**
@@ -7708,6 +8274,16 @@ open func expectedAmount()throws  -> UInt64  {
 open func fee()throws  -> UInt64?  {
     return try  FfiConverterOptionUInt64.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
     uniffi_lwk_fn_method_lockupresponse_fee(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Whether the user's lockup output is currently unspent.
+     */
+open func isLockupUnspent()throws  -> Bool  {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_lockupresponse_is_lockup_unspent(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -8171,6 +8747,11 @@ public func FfiConverterTypeLoggingLink_lower(_ value: LoggingLink) -> UnsafeMut
 public protocol LwkTestEnvProtocol: AnyObject, Sendable {
     
     /**
+     * Get the AMP2 URL of the test environment
+     */
+    func amp2Url()  -> String
+    
+    /**
      * Get the Electrum URL of the test environment
      */
     func electrumUrl()  -> String
@@ -8292,7 +8873,27 @@ public convenience init() {
     }
 
     
+    /**
+     * Creates a new test environment with AMP2 mock
+     */
+public static func newWithAmp2() -> LwkTestEnv  {
+    return try!  FfiConverterTypeLwkTestEnv_lift(try! rustCall() {
+    uniffi_lwk_fn_constructor_lwktestenv_new_with_amp2($0
+    )
+})
+}
+    
 
+    
+    /**
+     * Get the AMP2 URL of the test environment
+     */
+open func amp2Url() -> String  {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_lwk_fn_method_lwktestenv_amp2_url(self.uniffiClonePointer(),$0
+    )
+})
+}
     
     /**
      * Get the Electrum URL of the test environment
@@ -8830,13 +9431,25 @@ public protocol NetworkProtocol: AnyObject, Sendable {
     
     /**
      * Return the genesis block hash for this network as hex string.
+     *
+     * Deprecated: use `genesis_hash()`
      */
     func genesisBlockHash()  -> String
+    
+    /**
+     * Return the genesis block hash for this network as hex string.
+     */
+    func genesisHash()  -> String
     
     /**
      * Return true if the network is the mainnet network
      */
     func isMainnet()  -> Bool
+    
+    /**
+     * Return the parent-chain genesis block hash for this network as hex string.
+     */
+    func parentGenesisHash()  -> String
     
     /**
      * Return the policy asset (eg LBTC for mainnet) for this network
@@ -8967,10 +9580,22 @@ open func defaultEsploraClient()throws  -> EsploraClient  {
     
     /**
      * Return the genesis block hash for this network as hex string.
+     *
+     * Deprecated: use `genesis_hash()`
      */
 open func genesisBlockHash() -> String  {
     return try!  FfiConverterString.lift(try! rustCall() {
     uniffi_lwk_fn_method_network_genesis_block_hash(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Return the genesis block hash for this network as hex string.
+     */
+open func genesisHash() -> String  {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_lwk_fn_method_network_genesis_hash(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -8981,6 +9606,16 @@ open func genesisBlockHash() -> String  {
 open func isMainnet() -> Bool  {
     return try!  FfiConverterBool.lift(try! rustCall() {
     uniffi_lwk_fn_method_network_is_mainnet(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Return the parent-chain genesis block hash for this network as hex string.
+     */
+open func parentGenesisHash() -> String  {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_lwk_fn_method_network_parent_genesis_hash(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -11003,9 +11638,9 @@ public protocol PsetInputProtocol: AnyObject, Sendable {
     func redeemScript()  -> Script?
     
     /**
-     * Input sighash.
+     * Return the sighash declared by an input, the default implied by the spent output script, or `None` if the spent output is unknown.
      */
-    func sighash()  -> UInt32
+    func sighash()  -> UInt32?
     
 }
 /**
@@ -11145,10 +11780,10 @@ open func redeemScript() -> Script?  {
 }
     
     /**
-     * Input sighash.
+     * Return the sighash declared by an input, the default implied by the spent output script, or `None` if the spent output is unknown.
      */
-open func sighash() -> UInt32  {
-    return try!  FfiConverterUInt32.lift(try! rustCall() {
+open func sighash() -> UInt32?  {
+    return try!  FfiConverterOptionUInt32.lift(try! rustCall() {
     uniffi_lwk_fn_method_psetinput_sighash(self.uniffiClonePointer(),$0
     )
 })
@@ -11843,14 +12478,26 @@ public func FfiConverterTypeRecipient_lower(_ value: Recipient) -> UnsafeMutable
 public protocol ReissuanceRequestProtocol: AnyObject, Sendable {
     
     /**
-     * Sets the address receiving the reissued asset units; if not called, they are sent
-     * to an address of the wallet generating the reissuance
+     * Adds an output receiving `satoshi` of the reissued asset units
+     *
+     * **Experimental**: this API might change without notice.
+     *
+     * The units are sent to `address` if some, or to an address of the wallet generating the
+     * reissuance if none.
+     *
+     * Call this multiple times to split the reissued units across several outputs: the amounts of
+     * all the added outputs must sum up to the reissued amount, otherwise
+     * [`TxBuilder::add_reissuance()`] errors.
+     *
+     * If not called, the reissued units are sent to a single address of the wallet generating the
+     * reissuance.
      */
-    func assetReceiver(address: Address) throws 
+    func addAssetOutput(satoshi: UInt64, address: Address?) throws 
     
     /**
-     * Sets the transaction containing the original issuance of the reissued asset; only
-     * needed if that issuance transaction does not involve this wallet
+     * Sets the transaction containing the original issuance of the reissued asset
+     *
+     * Only needed if that issuance transaction does not involve this wallet.
      */
     func issuanceTx(tx: Transaction) throws 
     
@@ -11900,8 +12547,9 @@ open class ReissuanceRequest: ReissuanceRequestProtocol, @unchecked Sendable {
         return try! rustCall { uniffi_lwk_fn_clone_reissuancerequest(self.pointer, $0) }
     }
     /**
-     * Construct a request to reissue `satoshi_to_reissue` units of `asset_to_reissue`, provided
-     * the reissuance token is owned by the wallet generating the reissuance
+     * Construct a request to reissue `satoshi_to_reissue` units of `asset_to_reissue`
+     *
+     * Requires the reissuance token to be owned by the wallet generating the reissuance.
      */
 public convenience init(assetToReissue: AssetId, satoshiToReissue: UInt64) {
     let pointer =
@@ -11926,19 +12574,32 @@ public convenience init(assetToReissue: AssetId, satoshiToReissue: UInt64) {
 
     
     /**
-     * Sets the address receiving the reissued asset units; if not called, they are sent
-     * to an address of the wallet generating the reissuance
+     * Adds an output receiving `satoshi` of the reissued asset units
+     *
+     * **Experimental**: this API might change without notice.
+     *
+     * The units are sent to `address` if some, or to an address of the wallet generating the
+     * reissuance if none.
+     *
+     * Call this multiple times to split the reissued units across several outputs: the amounts of
+     * all the added outputs must sum up to the reissued amount, otherwise
+     * [`TxBuilder::add_reissuance()`] errors.
+     *
+     * If not called, the reissued units are sent to a single address of the wallet generating the
+     * reissuance.
      */
-open func assetReceiver(address: Address)throws   {try rustCallWithError(FfiConverterTypeLwkError_lift) {
-    uniffi_lwk_fn_method_reissuancerequest_asset_receiver(self.uniffiClonePointer(),
-        FfiConverterTypeAddress_lower(address),$0
+open func addAssetOutput(satoshi: UInt64, address: Address?)throws   {try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_reissuancerequest_add_asset_output(self.uniffiClonePointer(),
+        FfiConverterUInt64.lower(satoshi),
+        FfiConverterOptionTypeAddress.lower(address),$0
     )
 }
 }
     
     /**
-     * Sets the transaction containing the original issuance of the reissued asset; only
-     * needed if that issuance transaction does not involve this wallet
+     * Sets the transaction containing the original issuance of the reissued asset
+     *
+     * Only needed if that issuance transaction does not involve this wallet.
      */
 open func issuanceTx(tx: Transaction)throws   {try rustCallWithError(FfiConverterTypeLwkError_lift) {
     uniffi_lwk_fn_method_reissuancerequest_issuance_tx(self.uniffiClonePointer(),
@@ -12500,6 +13161,11 @@ public protocol SignerProtocol: AnyObject, Sendable {
     func keyoriginXpub(bip: Bip) throws  -> String
     
     /**
+     * Derive an xpub at `path` and return it as a keyorigin xpub string
+     */
+    func keyoriginXpubFromPath(path: DerivationPath) throws  -> String
+    
+    /**
      * Get the mnemonic of the signer
      */
     func mnemonic() throws  -> Mnemonic
@@ -12681,6 +13347,17 @@ open func keyoriginXpub(bip: Bip)throws  -> String  {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
     uniffi_lwk_fn_method_signer_keyorigin_xpub(self.uniffiClonePointer(),
         FfiConverterTypeBip_lower(bip),$0
+    )
+})
+}
+    
+    /**
+     * Derive an xpub at `path` and return it as a keyorigin xpub string
+     */
+open func keyoriginXpubFromPath(path: DerivationPath)throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_signer_keyorigin_xpub_from_path(self.uniffiClonePointer(),
+        FfiConverterTypeDerivationPath_lower(path),$0
     )
 })
 }
@@ -13271,10 +13948,8 @@ public protocol TxBuilderProtocol: AnyObject, Sendable {
      *
      * **Experimental**: this API might change without notice.
      *
-     * `request` sets the asset/token amounts, receivers, and contract; see
+     * `request` sets the asset/token amounts, receivers, contract and pinning; see
      * [`IssuanceRequest`] for details.
-     *
-     * Optionally, pin the issuance to a specific input via [`IssuanceRequest::pin_input()`].
      *
      * Can be called multiple times to issue several assets in the same transaction. All calls
      * must agree on pinning: either every issuance is pinned (each to a different input) or
@@ -13290,6 +13965,11 @@ public protocol TxBuilderProtocol: AnyObject, Sendable {
     func addLbtcRecipient(address: Address, satoshi: UInt64) throws 
     
     /**
+     * Add an OP_RETURN output with the given data
+     */
+    func addOpReturn(data: Data) throws 
+    
+    /**
      * Add a recipient receiving the given asset
      */
     func addRecipient(address: Address, satoshi: UInt64, asset: AssetId) throws 
@@ -13299,7 +13979,7 @@ public protocol TxBuilderProtocol: AnyObject, Sendable {
      *
      * **Experimental**: this API might change without notice.
      *
-     * `request` sets the asset to reissue, amount, receiver, and issuance transaction; see
+     * `request` sets the asset to reissue, amount, receivers, and issuance transaction; see
      * [`ReissuanceRequest`] for details.
      *
      * Can be called multiple times to reissue several assets in the same transaction, as long
@@ -13313,6 +13993,11 @@ public protocol TxBuilderProtocol: AnyObject, Sendable {
      * Sets the address to drain excess L-BTC to
      */
     func drainLbtcTo(address: Address) throws 
+    
+    /**
+     * Sets the (explicit, non-confidential) address to drain excess L-BTC to
+     */
+    func drainLbtcToExplicit(address: Address) throws 
     
     /**
      * Select all available L-BTC inputs
@@ -13521,10 +14206,8 @@ open func addInputRangeproofs(addRangeproofs: Bool)throws   {try rustCallWithErr
      *
      * **Experimental**: this API might change without notice.
      *
-     * `request` sets the asset/token amounts, receivers, and contract; see
+     * `request` sets the asset/token amounts, receivers, contract and pinning; see
      * [`IssuanceRequest`] for details.
-     *
-     * Optionally, pin the issuance to a specific input via [`IssuanceRequest::pin_input()`].
      *
      * Can be called multiple times to issue several assets in the same transaction. All calls
      * must agree on pinning: either every issuance is pinned (each to a different input) or
@@ -13551,6 +14234,16 @@ open func addLbtcRecipient(address: Address, satoshi: UInt64)throws   {try rustC
 }
     
     /**
+     * Add an OP_RETURN output with the given data
+     */
+open func addOpReturn(data: Data)throws   {try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_txbuilder_add_op_return(self.uniffiClonePointer(),
+        FfiConverterData.lower(data),$0
+    )
+}
+}
+    
+    /**
      * Add a recipient receiving the given asset
      */
 open func addRecipient(address: Address, satoshi: UInt64, asset: AssetId)throws   {try rustCallWithError(FfiConverterTypeLwkError_lift) {
@@ -13567,7 +14260,7 @@ open func addRecipient(address: Address, satoshi: UInt64, asset: AssetId)throws 
      *
      * **Experimental**: this API might change without notice.
      *
-     * `request` sets the asset to reissue, amount, receiver, and issuance transaction; see
+     * `request` sets the asset to reissue, amount, receivers, and issuance transaction; see
      * [`ReissuanceRequest`] for details.
      *
      * Can be called multiple times to reissue several assets in the same transaction, as long
@@ -13587,6 +14280,16 @@ open func addReissuance(request: ReissuanceRequest)throws   {try rustCallWithErr
      */
 open func drainLbtcTo(address: Address)throws   {try rustCallWithError(FfiConverterTypeLwkError_lift) {
     uniffi_lwk_fn_method_txbuilder_drain_lbtc_to(self.uniffiClonePointer(),
+        FfiConverterTypeAddress_lower(address),$0
+    )
+}
+}
+    
+    /**
+     * Sets the (explicit, non-confidential) address to drain excess L-BTC to
+     */
+open func drainLbtcToExplicit(address: Address)throws   {try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_txbuilder_drain_lbtc_to_explicit(self.uniffiClonePointer(),
         FfiConverterTypeAddress_lower(address),$0
     )
 }
@@ -15878,6 +16581,11 @@ public protocol WaterfallsClientProtocol: AnyObject, Sendable {
     func fullScanToIndex(wollet: Wollet, index: UInt32) throws  -> Update?
     
     /**
+     * Whether the descriptor has any tx using the first `gap_limit` addresses (default 20)
+     */
+    func hasTxs(descriptor: WolletDescriptor, gapLimit: UInt32?) throws  -> Bool
+    
+    /**
      * Subscribe to Waterfalls descriptor updates.
      *
      * Subscription events are hints. `tip` events only indicate a new chain tip;
@@ -16000,6 +16708,18 @@ open func fullScanToIndex(wollet: Wollet, index: UInt32)throws  -> Update?  {
     uniffi_lwk_fn_method_waterfallsclient_full_scan_to_index(self.uniffiClonePointer(),
         FfiConverterTypeWollet_lower(wollet),
         FfiConverterUInt32.lower(index),$0
+    )
+})
+}
+    
+    /**
+     * Whether the descriptor has any tx using the first `gap_limit` addresses (default 20)
+     */
+open func hasTxs(descriptor: WolletDescriptor, gapLimit: UInt32?)throws  -> Bool  {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_waterfallsclient_has_txs(self.uniffiClonePointer(),
+        FfiConverterTypeWolletDescriptor_lower(descriptor),
+        FfiConverterOptionUInt32.lower(gapLimit),$0
     )
 })
 }
@@ -17469,6 +18189,124 @@ public func FfiConverterTypeBoltzSessionBuilder_lift(_ buf: RustBuffer) throws -
 #endif
 public func FfiConverterTypeBoltzSessionBuilder_lower(_ value: BoltzSessionBuilder) -> RustBuffer {
     return FfiConverterTypeBoltzSessionBuilder.lower(value)
+}
+
+
+/**
+ * A builder for the [`ElectrumClient`], to set a token provider (for authenticated Electrum
+ * RPC proxies) and other options.
+ */
+public struct ElectrumClientBuilder {
+    /**
+     * The Electrum server url, e.g. `ssl://blockstream.info:995` or `tcp://host:50001`
+     */
+    public var url: String
+    /**
+     * Request/connection timeout in seconds
+     */
+    public var timeout: UInt8?
+    /**
+     * Token provider for authenticated Electrum RPC proxies
+     */
+    public var tokenProvider: TokenProvider?
+    /**
+     * Allow sending the token over a plaintext (`tcp://`) connection. Insecure; only for a
+     * localhost proxy or an already-tunneled connection. Off by default, so a token on a
+     * `tcp://` url is refused.
+     */
+    public var allowPlaintextWithToken: Bool
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * The Electrum server url, e.g. `ssl://blockstream.info:995` or `tcp://host:50001`
+         */url: String, 
+        /**
+         * Request/connection timeout in seconds
+         */timeout: UInt8? = nil, 
+        /**
+         * Token provider for authenticated Electrum RPC proxies
+         */tokenProvider: TokenProvider? = nil, 
+        /**
+         * Allow sending the token over a plaintext (`tcp://`) connection. Insecure; only for a
+         * localhost proxy or an already-tunneled connection. Off by default, so a token on a
+         * `tcp://` url is refused.
+         */allowPlaintextWithToken: Bool = false) {
+        self.url = url
+        self.timeout = timeout
+        self.tokenProvider = tokenProvider
+        self.allowPlaintextWithToken = allowPlaintextWithToken
+    }
+}
+
+#if compiler(>=6)
+extension ElectrumClientBuilder: Sendable {}
+#endif
+
+
+extension ElectrumClientBuilder: Equatable, Hashable {
+    public static func ==(lhs: ElectrumClientBuilder, rhs: ElectrumClientBuilder) -> Bool {
+        if lhs.url != rhs.url {
+            return false
+        }
+        if lhs.timeout != rhs.timeout {
+            return false
+        }
+        if lhs.tokenProvider != rhs.tokenProvider {
+            return false
+        }
+        if lhs.allowPlaintextWithToken != rhs.allowPlaintextWithToken {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(url)
+        hasher.combine(timeout)
+        hasher.combine(tokenProvider)
+        hasher.combine(allowPlaintextWithToken)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeElectrumClientBuilder: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ElectrumClientBuilder {
+        return
+            try ElectrumClientBuilder(
+                url: FfiConverterString.read(from: &buf), 
+                timeout: FfiConverterOptionUInt8.read(from: &buf), 
+                tokenProvider: FfiConverterOptionTypeTokenProvider.read(from: &buf), 
+                allowPlaintextWithToken: FfiConverterBool.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: ElectrumClientBuilder, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.url, into: &buf)
+        FfiConverterOptionUInt8.write(value.timeout, into: &buf)
+        FfiConverterOptionTypeTokenProvider.write(value.tokenProvider, into: &buf)
+        FfiConverterBool.write(value.allowPlaintextWithToken, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeElectrumClientBuilder_lift(_ buf: RustBuffer) throws -> ElectrumClientBuilder {
+    return try FfiConverterTypeElectrumClientBuilder.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeElectrumClientBuilder_lower(_ value: ElectrumClientBuilder) -> RustBuffer {
+    return FfiConverterTypeElectrumClientBuilder.lower(value)
 }
 
 
@@ -20423,18 +21261,6 @@ public func deriveTokenId(txin: TxIn, contract: Contract)throws  -> AssetId  {
 })
 }
 /**
- * Get the derivation path for an account
- */
-public func getPath(network: Network, accountType: String, accountNum: UInt32)throws  -> [UInt32]  {
-    return try  FfiConverterSequenceUInt32.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
-    uniffi_lwk_fn_func_get_path(
-        FfiConverterTypeNetwork_lower(network),
-        FfiConverterString.lower(accountType),
-        FfiConverterUInt32.lower(accountNum),$0
-    )
-})
-}
-/**
  * Whether a script pubkey is provably segwit
  */
 public func isProvablySegwit(scriptPubkey: Script, redeemScript: Script?) -> Bool  {
@@ -20465,9 +21291,6 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_func_derive_token_id() != 30312) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_lwk_checksum_func_get_path() != 14693) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_func_is_provably_segwit() != 18100) {
@@ -20540,6 +21363,18 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_amp2_descriptor_from_str() != 47737) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_amp2_elip153_from_signer() != 1406) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_amp2_elip153_from_str() != 43116) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_amp2_elip153_user_path() != 17407) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_amp2_elip153_view_path() != 63960) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_amp2_register_wallet() != 64376) {
@@ -20686,6 +21521,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_boltzsession_invoice() != 64828) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_lwk_checksum_method_boltzsession_is_lockup_unspent() != 38106) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_lwk_checksum_method_boltzsession_lbtc_to_btc() != 24979) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -20758,6 +21596,21 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_currencycode_name() != 27063) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_lwk_checksum_method_customelementsnetworkbuilder_build() != 37373) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_customelementsnetworkbuilder_with_genesis_hash() != 3891) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_customelementsnetworkbuilder_with_parent_genesis_hash() != 57958) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_customelementsnetworkbuilder_with_policy_asset() != 42805) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_derivationpath_to_vec() != 25747) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_lwk_checksum_method_electrumclient_broadcast() != 47006) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -20768,6 +21621,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_electrumclient_get_tx() != 33161) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_electrumclient_has_txs() != 53069) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_electrumclient_ping() != 58048) {
@@ -20783,6 +21639,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_esploraclient_full_scan_to_index() != 5341) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_esploraclient_has_txs() != 53120) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_esploraclient_tip() != 31289) {
@@ -20869,10 +21728,10 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_issuance_token_satoshi() != 60126) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_issuancerequest_address_asset() != 25936) {
+    if (uniffi_lwk_checksum_method_issuancerequest_add_asset_output() != 62532) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_issuancerequest_address_token() != 2681) {
+    if (uniffi_lwk_checksum_method_issuancerequest_add_token_output() != 1657) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_issuancerequest_contract() != 29893) {
@@ -20929,6 +21788,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_lockupresponse_fee() != 33238) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_lwk_checksum_method_lockupresponse_is_lockup_unspent() != 37255) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_lwk_checksum_method_lockupresponse_lockup_address() != 49127) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -20951,6 +21813,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_logging_log() != 50033) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_lwktestenv_amp2_url() != 23056) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_lwktestenv_electrum_url() != 44900) {
@@ -21001,10 +21866,16 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_network_default_esplora_client() != 60328) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_network_genesis_block_hash() != 65413) {
+    if (uniffi_lwk_checksum_method_network_genesis_block_hash() != 60558) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_network_genesis_hash() != 54960) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_network_is_mainnet() != 10603) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_network_parent_genesis_hash() != 25305) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_network_policy_asset() != 61911) {
@@ -21193,7 +22064,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_psetinput_redeem_script() != 62835) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_psetinput_sighash() != 46072) {
+    if (uniffi_lwk_checksum_method_psetinput_sighash() != 13879) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_psetoutput_amount() != 6432) {
@@ -21235,10 +22106,10 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_recipient_vout() != 24321) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_reissuancerequest_asset_receiver() != 37925) {
+    if (uniffi_lwk_checksum_method_reissuancerequest_add_asset_output() != 9922) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_reissuancerequest_issuance_tx() != 50808) {
+    if (uniffi_lwk_checksum_method_reissuancerequest_issuance_tx() != 62641) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_script_bytes() != 57904) {
@@ -21278,6 +22149,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_signer_keyorigin_xpub() != 48213) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_signer_keyorigin_xpub_from_path() != 46810) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_signer_mnemonic() != 41786) {
@@ -21331,19 +22205,25 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_txbuilder_add_input_rangeproofs() != 13756) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_txbuilder_add_issuance() != 23898) {
+    if (uniffi_lwk_checksum_method_txbuilder_add_issuance() != 59375) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_txbuilder_add_lbtc_recipient() != 895) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_lwk_checksum_method_txbuilder_add_op_return() != 55242) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_lwk_checksum_method_txbuilder_add_recipient() != 56700) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_txbuilder_add_reissuance() != 18219) {
+    if (uniffi_lwk_checksum_method_txbuilder_add_reissuance() != 26747) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_txbuilder_drain_lbtc_to() != 34381) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_txbuilder_drain_lbtc_to_explicit() != 51529) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_txbuilder_drain_lbtc_wallet() != 46356) {
@@ -21512,6 +22392,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_waterfallsclient_full_scan_to_index() != 12641) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_waterfallsclient_has_txs() != 30365) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_waterfallsclient_subscribe() != 62222) {
@@ -21691,6 +22574,21 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_constructor_currencycode_new() != 9828) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_lwk_checksum_constructor_customelementsnetworkbuilder_new() != 38068) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_constructor_derivationpath_from_account() != 35229) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_constructor_derivationpath_from_vec() != 4058) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_constructor_derivationpath_new() != 44555) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_constructor_electrumclient_from_builder() != 14213) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_lwk_checksum_constructor_electrumclient_from_url() != 21158) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -21715,7 +22613,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_constructor_foreignstorelink_new() != 29701) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_constructor_issuancerequest_new() != 10650) {
+    if (uniffi_lwk_checksum_constructor_issuancerequest_new() != 39872) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_constructor_lightningpayment_from_bolt11_invoice() != 15133) {
@@ -21728,6 +22626,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_constructor_lwktestenv_new() != 2775) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_constructor_lwktestenv_new_with_amp2() != 20610) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_constructor_lwkteststore_new() != 48161) {
@@ -21778,7 +22679,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_constructor_pset_new() != 61694) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_constructor_reissuancerequest_new() != 17967) {
+    if (uniffi_lwk_checksum_constructor_reissuancerequest_new() != 40886) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_constructor_script_empty() != 47087) {
