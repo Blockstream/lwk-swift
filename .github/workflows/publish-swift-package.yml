@@ -82,7 +82,6 @@ jobs:
       - name: Add MARKETING_VERSION to project.yml
         working-directory: build/lwk_bindings/swift
         run: |
-          brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/005005ff7c057f713d52db5e16e5a8913cc79c4c/Formula/y/yq.rb # 4.53.3
           yq e '.targets.lwkFFI.settings.MARKETING_VERSION = env(VERSION)' -i project.yml
           yq e '.targets.lwkFFI.settings.CURRENT_PROJECT_VERSION = "1"' -i project.yml
       - name: Build Swift bindings
