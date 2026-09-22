@@ -1866,7 +1866,7 @@ public func FfiConverterTypeAmp0SignerData_lower(_ value: Amp0SignerData) -> Uns
 
 
 /**
- * Wrapper over [`lwk_wollet::amp2::Amp2`]
+ * Context for actions interacting with AMP2
  */
 public protocol Amp2Protocol: AnyObject, Sendable {
     
@@ -1881,29 +1881,31 @@ public protocol Amp2Protocol: AnyObject, Sendable {
     func descriptorFromStr(keyoriginXpub: String, descriptorBlindingKey: String) throws  -> Amp2Descriptor
     
     /**
-     * Create an AMP2 descriptor ELIP153 compliant from a signer
+     * Create an AMP2 descriptor ELIP153 compliant from a signer managed externally.
+     *
+     * Caller must ensure that:
+     * * `user_keyorigin_xpub` is the keyorigin xpub derived at `Amp2::elip153_user_path()` for `account_num`
+     * * `view_keyorigin_xpub` is the keyorigin xpub derived at `Amp2::elip153_view_path()` for `account_num`
+     *
+     * **Warning**: Passing incorrect signer data can lead to creating an incorrect
+     * descriptor, which could lead to loss of funds.
      */
-    func elip153FromSigner(signer: Signer, account: UInt32) throws  -> Amp2Descriptor
+    func elip153FromExternalSigner(accountNum: UInt32, userKey: DescriptorPublicKey, viewKey: DescriptorPublicKey) throws  -> Amp2Descriptor
     
     /**
-     * Create an AMP2 descriptor ELIP153 compliant from xpub strings.
-     *
-     * This is typically used when the signer is managed outside of LWK.
-     * Derive the user xpub at [`Amp2::elip153_user_path()`] and
-     * the view xpub at [`Amp2::elip153_view_path()`], and pass the
-     * obtained keyorigin_xpub strings here.
+     * Create an AMP2 descriptor ELIP153 compliant from a signer
      */
-    func elip153FromStr(userKeyoriginXpub: String, viewKeyoriginXpub: String) throws  -> Amp2Descriptor
+    func elip153FromSigner(signer: Signer, accountNum: UInt32) throws  -> Amp2Descriptor
     
     /**
      * ELIP153 `USER_PATH = m/purpose'/coin_type'/account'`
      */
-    func elip153UserPath(account: UInt32) throws  -> DerivationPath
+    func elip153UserPath(accountNum: UInt32) throws  -> DerivationPath
     
     /**
      * ELIP153 `VIEW_PATH = m/purpose'/coin_type'/account'/server_fingerprint_masked'`
      */
-    func elip153ViewPath(account: UInt32) throws  -> DerivationPath
+    func elip153ViewPath(accountNum: UInt32) throws  -> DerivationPath
     
     /**
      * Register an AMP2 wallet with the AMP2 server
@@ -1912,7 +1914,7 @@ public protocol Amp2Protocol: AnyObject, Sendable {
     
 }
 /**
- * Wrapper over [`lwk_wollet::amp2::Amp2`]
+ * Context for actions interacting with AMP2
  */
 open class Amp2: Amp2Protocol, @unchecked Sendable {
     fileprivate let pointer: UnsafeMutableRawPointer!
@@ -2015,30 +2017,33 @@ open func descriptorFromStr(keyoriginXpub: String, descriptorBlindingKey: String
 }
     
     /**
-     * Create an AMP2 descriptor ELIP153 compliant from a signer
+     * Create an AMP2 descriptor ELIP153 compliant from a signer managed externally.
+     *
+     * Caller must ensure that:
+     * * `user_keyorigin_xpub` is the keyorigin xpub derived at `Amp2::elip153_user_path()` for `account_num`
+     * * `view_keyorigin_xpub` is the keyorigin xpub derived at `Amp2::elip153_view_path()` for `account_num`
+     *
+     * **Warning**: Passing incorrect signer data can lead to creating an incorrect
+     * descriptor, which could lead to loss of funds.
      */
-open func elip153FromSigner(signer: Signer, account: UInt32)throws  -> Amp2Descriptor  {
+open func elip153FromExternalSigner(accountNum: UInt32, userKey: DescriptorPublicKey, viewKey: DescriptorPublicKey)throws  -> Amp2Descriptor  {
     return try  FfiConverterTypeAmp2Descriptor_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
-    uniffi_lwk_fn_method_amp2_elip153_from_signer(self.uniffiClonePointer(),
-        FfiConverterTypeSigner_lower(signer),
-        FfiConverterUInt32.lower(account),$0
+    uniffi_lwk_fn_method_amp2_elip153_from_external_signer(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(accountNum),
+        FfiConverterTypeDescriptorPublicKey_lower(userKey),
+        FfiConverterTypeDescriptorPublicKey_lower(viewKey),$0
     )
 })
 }
     
     /**
-     * Create an AMP2 descriptor ELIP153 compliant from xpub strings.
-     *
-     * This is typically used when the signer is managed outside of LWK.
-     * Derive the user xpub at [`Amp2::elip153_user_path()`] and
-     * the view xpub at [`Amp2::elip153_view_path()`], and pass the
-     * obtained keyorigin_xpub strings here.
+     * Create an AMP2 descriptor ELIP153 compliant from a signer
      */
-open func elip153FromStr(userKeyoriginXpub: String, viewKeyoriginXpub: String)throws  -> Amp2Descriptor  {
+open func elip153FromSigner(signer: Signer, accountNum: UInt32)throws  -> Amp2Descriptor  {
     return try  FfiConverterTypeAmp2Descriptor_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
-    uniffi_lwk_fn_method_amp2_elip153_from_str(self.uniffiClonePointer(),
-        FfiConverterString.lower(userKeyoriginXpub),
-        FfiConverterString.lower(viewKeyoriginXpub),$0
+    uniffi_lwk_fn_method_amp2_elip153_from_signer(self.uniffiClonePointer(),
+        FfiConverterTypeSigner_lower(signer),
+        FfiConverterUInt32.lower(accountNum),$0
     )
 })
 }
@@ -2046,10 +2051,10 @@ open func elip153FromStr(userKeyoriginXpub: String, viewKeyoriginXpub: String)th
     /**
      * ELIP153 `USER_PATH = m/purpose'/coin_type'/account'`
      */
-open func elip153UserPath(account: UInt32)throws  -> DerivationPath  {
+open func elip153UserPath(accountNum: UInt32)throws  -> DerivationPath  {
     return try  FfiConverterTypeDerivationPath_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
     uniffi_lwk_fn_method_amp2_elip153_user_path(self.uniffiClonePointer(),
-        FfiConverterUInt32.lower(account),$0
+        FfiConverterUInt32.lower(accountNum),$0
     )
 })
 }
@@ -2057,10 +2062,10 @@ open func elip153UserPath(account: UInt32)throws  -> DerivationPath  {
     /**
      * ELIP153 `VIEW_PATH = m/purpose'/coin_type'/account'/server_fingerprint_masked'`
      */
-open func elip153ViewPath(account: UInt32)throws  -> DerivationPath  {
+open func elip153ViewPath(accountNum: UInt32)throws  -> DerivationPath  {
     return try  FfiConverterTypeDerivationPath_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
     uniffi_lwk_fn_method_amp2_elip153_view_path(self.uniffiClonePointer(),
-        FfiConverterUInt32.lower(account),$0
+        FfiConverterUInt32.lower(accountNum),$0
     )
 })
 }
@@ -2135,15 +2140,18 @@ public func FfiConverterTypeAmp2_lower(_ value: Amp2) -> UnsafeMutableRawPointer
 
 
 /**
- * Wrapper over [`lwk_wollet::amp2::Amp2Descriptor`]
+ * An AMP2 descriptor
  */
 public protocol Amp2DescriptorProtocol: AnyObject, Sendable {
     
+    /**
+     * The inner `WolletDescriptor`
+     */
     func descriptor()  -> WolletDescriptor
     
 }
 /**
- * Wrapper over [`lwk_wollet::amp2::Amp2Descriptor`]
+ * An AMP2 descriptor
  */
 open class Amp2Descriptor: Amp2DescriptorProtocol, @unchecked Sendable {
     fileprivate let pointer: UnsafeMutableRawPointer!
@@ -2212,6 +2220,9 @@ public static func newWithCustomDescriptor(desc: WolletDescriptor) -> Amp2Descri
     
 
     
+    /**
+     * The inner `WolletDescriptor`
+     */
 open func descriptor() -> WolletDescriptor  {
     return try!  FfiConverterTypeWolletDescriptor_lift(try! rustCall() {
     uniffi_lwk_fn_method_amp2descriptor_descriptor(self.uniffiClonePointer(),$0
@@ -5548,27 +5559,27 @@ public convenience init(path: String)throws  {
 
     
     /**
-     * Construct the account-level derivation path
-     *
-     * `account_type` must be one of "wpkh", "shwpkh", "pkh" or "tr"
-     */
-public static func fromAccount(network: Network, accountType: String, accountNum: UInt32)throws  -> DerivationPath  {
-    return try  FfiConverterTypeDerivationPath_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
-    uniffi_lwk_fn_constructor_derivationpath_from_account(
-        FfiConverterTypeNetwork_lower(network),
-        FfiConverterString.lower(accountType),
-        FfiConverterUInt32.lower(accountNum),$0
-    )
-})
-}
-    
-    /**
      * Construct a DerivationPath from a vector of u32
      */
 public static func fromVec(path: [UInt32]) -> DerivationPath  {
     return try!  FfiConverterTypeDerivationPath_lift(try! rustCall() {
     uniffi_lwk_fn_constructor_derivationpath_from_vec(
         FfiConverterSequenceUInt32.lower(path),$0
+    )
+})
+}
+    
+    /**
+     * Construct the account-level derivation path
+     *
+     * `account_type` must be one of "wpkh", "shwpkh" or "tr"
+     */
+public static func ssPath(network: Network, accountType: String, accountNum: UInt32)throws  -> DerivationPath  {
+    return try  FfiConverterTypeDerivationPath_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_constructor_derivationpath_ss_path(
+        FfiConverterTypeNetwork_lower(network),
+        FfiConverterString.lower(accountType),
+        FfiConverterUInt32.lower(accountNum),$0
     )
 })
 }
@@ -5653,6 +5664,192 @@ public func FfiConverterTypeDerivationPath_lower(_ value: DerivationPath) -> Uns
 
 
 /**
+ * A descriptor public key
+ */
+public protocol DescriptorPublicKeyProtocol: AnyObject, Sendable {
+    
+    /**
+     * Return the derivation path from the master key, if key origin information is available.
+     */
+    func derivationPath()  -> DerivationPath?
+    
+    /**
+     * Return the fingerprint of the master key, if key origin information is available.
+     */
+    func fingerprint()  -> String?
+    
+    /**
+     * Return the extended public key, without any key origin information.
+     */
+    func xpub()  -> String?
+    
+}
+/**
+ * A descriptor public key
+ */
+open class DescriptorPublicKey: DescriptorPublicKeyProtocol, @unchecked Sendable {
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_lwk_fn_clone_descriptorpublickey(self.pointer, $0) }
+    }
+    /**
+     * Construct a DescriptorPublicKey from its string representation
+     *
+     * Accepts both a bare xpub and a keyorigin xpub
+     */
+public convenience init(s: String)throws  {
+    let pointer =
+        try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_constructor_descriptorpublickey_new(
+        FfiConverterString.lower(s),$0
+    )
+}
+    self.init(unsafeFromRawPointer: pointer)
+}
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_lwk_fn_free_descriptorpublickey(pointer, $0) }
+    }
+
+    
+
+    
+    /**
+     * Return the derivation path from the master key, if key origin information is available.
+     */
+open func derivationPath() -> DerivationPath?  {
+    return try!  FfiConverterOptionTypeDerivationPath.lift(try! rustCall() {
+    uniffi_lwk_fn_method_descriptorpublickey_derivation_path(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Return the fingerprint of the master key, if key origin information is available.
+     */
+open func fingerprint() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_lwk_fn_method_descriptorpublickey_fingerprint(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Return the extended public key, without any key origin information.
+     */
+open func xpub() -> String?  {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_lwk_fn_method_descriptorpublickey_xpub(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    open var description: String {
+        return try!  FfiConverterString.lift(
+            try! rustCall() {
+    uniffi_lwk_fn_method_descriptorpublickey_uniffi_trait_display(self.uniffiClonePointer(),$0
+    )
+}
+        )
+    }
+
+}
+extension DescriptorPublicKey: CustomStringConvertible {}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeDescriptorPublicKey: FfiConverter {
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = DescriptorPublicKey
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> DescriptorPublicKey {
+        return DescriptorPublicKey(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: DescriptorPublicKey) -> UnsafeMutableRawPointer {
+        return value.uniffiClonePointer()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DescriptorPublicKey {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: DescriptorPublicKey, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeDescriptorPublicKey_lift(_ pointer: UnsafeMutableRawPointer) throws -> DescriptorPublicKey {
+    return try FfiConverterTypeDescriptorPublicKey.lift(pointer)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeDescriptorPublicKey_lower(_ value: DescriptorPublicKey) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeDescriptorPublicKey.lower(value)
+}
+
+
+
+
+
+
+/**
  * A client to issue TCP requests to an electrum server.
  */
 public protocol ElectrumClientProtocol: AnyObject, Sendable {
@@ -5698,7 +5895,9 @@ public protocol ElectrumClientProtocol: AnyObject, Sendable {
     func getTx(txid: Txid) throws  -> Transaction
     
     /**
-     * Whether the descriptor has any tx using the first `gap_limit` addresses (default 20)
+     * Returns true if the wallet has any tx using the first gap_limit addresses (default 20)
+     *
+     * Note: if the descriptor does not have a wildcard, gap limit is ignored.
      */
     func hasTxs(descriptor: WolletDescriptor, gapLimit: UInt32?) throws  -> Bool
     
@@ -5870,7 +6069,9 @@ open func getTx(txid: Txid)throws  -> Transaction  {
 }
     
     /**
-     * Whether the descriptor has any tx using the first `gap_limit` addresses (default 20)
+     * Returns true if the wallet has any tx using the first gap_limit addresses (default 20)
+     *
+     * Note: if the descriptor does not have a wildcard, gap limit is ignored.
      */
 open func hasTxs(descriptor: WolletDescriptor, gapLimit: UInt32?)throws  -> Bool  {
     return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
@@ -6002,7 +6203,9 @@ public protocol EsploraClientProtocol: AnyObject, Sendable {
     func fullScanToIndex(wollet: Wollet, index: UInt32) throws  -> Update?
     
     /**
-     * Whether the descriptor has any tx using the first `gap_limit` addresses (default 20)
+     * Returns true if the wallet has any tx using the first gap_limit addresses (default 20)
+     *
+     * Note: if the descriptor does not have a wildcard, gap limit is ignored.
      */
     func hasTxs(descriptor: WolletDescriptor, gapLimit: UInt32?) throws  -> Bool
     
@@ -6160,7 +6363,9 @@ open func fullScanToIndex(wollet: Wollet, index: UInt32)throws  -> Update?  {
 }
     
     /**
-     * Whether the descriptor has any tx using the first `gap_limit` addresses (default 20)
+     * Returns true if the wallet has any tx using the first gap_limit addresses (default 20)
+     *
+     * Note: if the descriptor does not have a wildcard, gap limit is ignored.
      */
 open func hasTxs(descriptor: WolletDescriptor, gapLimit: UInt32?)throws  -> Bool  {
     return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
@@ -7576,6 +7781,8 @@ public protocol IssuanceRequestProtocol: AnyObject, Sendable {
     /**
      * Pin this issuance to a specific input
      *
+     * **Experimental**: this API might change without notice.
+     *
      * Requires manual inputs order: `input` must be one of the outpoints passed to
      * [`TxBuilder::set_inputs_order()`], otherwise [`TxBuilder::finish()`] will error.
      *
@@ -7715,6 +7922,8 @@ open func contract(contract: Contract)throws   {try rustCallWithError(FfiConvert
     
     /**
      * Pin this issuance to a specific input
+     *
+     * **Experimental**: this API might change without notice.
      *
      * Requires manual inputs order: `input` must be one of the outpoints passed to
      * [`TxBuilder::set_inputs_order()`], otherwise [`TxBuilder::finish()`] will error.
@@ -9911,6 +10120,266 @@ public func FfiConverterTypeOutPoint_lower(_ value: OutPoint) -> UnsafeMutableRa
 
 
 /**
+ * The details of an output of a PSET
+ */
+public protocol OutputDetailsProtocol: AnyObject, Sendable {
+    
+    /**
+     * The asset of the output, or None if it couldn't be verified against the commitments
+     */
+    func asset()  -> AssetId?
+    
+    /**
+     * The derivation path of the output, if it belongs to the wallet
+     */
+    func derivationPath()  -> DerivationPath?
+    
+    /**
+     * Whether this is the fee output
+     */
+    func isFee()  -> Bool
+    
+    /**
+     * Whether the output is fully confidential
+     * committed
+     */
+    func isFullyConfidential()  -> Bool
+    
+    /**
+     * Whether the output is fully explicit
+     * with no commitments
+     */
+    func isFullyExplicit()  -> Bool
+    
+    /**
+     * Whether the output belongs to the wallet
+     */
+    func isOwned()  -> Bool
+    
+    /**
+     * The amount of the output in satoshis, or None if it couldn't be verified against
+     * the commitments
+     */
+    func satoshi()  -> UInt64?
+    
+    /**
+     * The script pubkey of the output
+     */
+    func scriptPubkey()  -> Script
+    
+    /**
+     * The index of the output in the transaction
+     */
+    func vout()  -> UInt32
+    
+}
+/**
+ * The details of an output of a PSET
+ */
+open class OutputDetails: OutputDetailsProtocol, @unchecked Sendable {
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_lwk_fn_clone_outputdetails(self.pointer, $0) }
+    }
+    // No primary constructor declared for this class.
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_lwk_fn_free_outputdetails(pointer, $0) }
+    }
+
+    
+
+    
+    /**
+     * The asset of the output, or None if it couldn't be verified against the commitments
+     */
+open func asset() -> AssetId?  {
+    return try!  FfiConverterOptionTypeAssetId.lift(try! rustCall() {
+    uniffi_lwk_fn_method_outputdetails_asset(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * The derivation path of the output, if it belongs to the wallet
+     */
+open func derivationPath() -> DerivationPath?  {
+    return try!  FfiConverterOptionTypeDerivationPath.lift(try! rustCall() {
+    uniffi_lwk_fn_method_outputdetails_derivation_path(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Whether this is the fee output
+     */
+open func isFee() -> Bool  {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_lwk_fn_method_outputdetails_is_fee(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Whether the output is fully confidential
+     * committed
+     */
+open func isFullyConfidential() -> Bool  {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_lwk_fn_method_outputdetails_is_fully_confidential(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Whether the output is fully explicit
+     * with no commitments
+     */
+open func isFullyExplicit() -> Bool  {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_lwk_fn_method_outputdetails_is_fully_explicit(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Whether the output belongs to the wallet
+     */
+open func isOwned() -> Bool  {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_lwk_fn_method_outputdetails_is_owned(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * The amount of the output in satoshis, or None if it couldn't be verified against
+     * the commitments
+     */
+open func satoshi() -> UInt64?  {
+    return try!  FfiConverterOptionUInt64.lift(try! rustCall() {
+    uniffi_lwk_fn_method_outputdetails_satoshi(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * The script pubkey of the output
+     */
+open func scriptPubkey() -> Script  {
+    return try!  FfiConverterTypeScript_lift(try! rustCall() {
+    uniffi_lwk_fn_method_outputdetails_script_pubkey(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * The index of the output in the transaction
+     */
+open func vout() -> UInt32  {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+    uniffi_lwk_fn_method_outputdetails_vout(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeOutputDetails: FfiConverter {
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = OutputDetails
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> OutputDetails {
+        return OutputDetails(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: OutputDetails) -> UnsafeMutableRawPointer {
+        return value.uniffiClonePointer()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> OutputDetails {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: OutputDetails, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeOutputDetails_lift(_ pointer: UnsafeMutableRawPointer) throws -> OutputDetails {
+    return try FfiConverterTypeOutputDetails.lift(pointer)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeOutputDetails_lower(_ value: OutputDetails) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeOutputDetails.lower(value)
+}
+
+
+
+
+
+
+/**
  * A parsed payment category from a payment instruction string.
  *
  * This can be a Bitcoin address, Liquid address, Lightning invoice,
@@ -11413,9 +11882,19 @@ public protocol PsetDetailsProtocol: AnyObject, Sendable {
     func fingerprintsMissing()  -> [String]
     
     /**
+     * Whether any PSET input sighash is not the default one
+     */
+    func hasNonDefaultSighash()  -> Bool
+    
+    /**
      * Return an element for every input that could possibly be a issuance or a reissuance
      */
     func inputsIssuances()  -> [Issuance]
+    
+    /**
+     * The details of the outputs of the PSET
+     */
+    func outputs()  -> [OutputDetails]
     
     /**
      * For each input its existing or missing signatures
@@ -11514,11 +11993,31 @@ open func fingerprintsMissing() -> [String]  {
 }
     
     /**
+     * Whether any PSET input sighash is not the default one
+     */
+open func hasNonDefaultSighash() -> Bool  {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_lwk_fn_method_psetdetails_has_non_default_sighash(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
      * Return an element for every input that could possibly be a issuance or a reissuance
      */
 open func inputsIssuances() -> [Issuance]  {
     return try!  FfiConverterSequenceTypeIssuance.lift(try! rustCall() {
     uniffi_lwk_fn_method_psetdetails_inputs_issuances(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * The details of the outputs of the PSET
+     */
+open func outputs() -> [OutputDetails]  {
+    return try!  FfiConverterSequenceTypeOutputDetails.lift(try! rustCall() {
+    uniffi_lwk_fn_method_psetdetails_outputs(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -12497,9 +12996,25 @@ public protocol ReissuanceRequestProtocol: AnyObject, Sendable {
     /**
      * Sets the transaction containing the original issuance of the reissued asset
      *
+     * **Experimental**: this API might change without notice.
+     *
      * Only needed if that issuance transaction does not involve this wallet.
      */
     func issuanceTx(tx: Transaction) throws 
+    
+    /**
+     * Pin this reissuance to the reissuance token utxo spent by `input`
+     *
+     * **Experimental**: this API might change without notice.
+     *
+     * `input` must hold the reissuance token of the asset being reissued, otherwise
+     * [`TxBuilder::finish()`] will error. If it is not already an input of the transaction it is
+     * added, unless a manual inputs order is set, in which case it must be one of the outpoints
+     * passed to [`TxBuilder::set_inputs_order()`].
+     *
+     * If not called, the reissuance is assigned to the first input holding the token.
+     */
+    func pinInput(input: OutPoint) throws 
     
 }
 /**
@@ -12599,11 +13114,32 @@ open func addAssetOutput(satoshi: UInt64, address: Address?)throws   {try rustCa
     /**
      * Sets the transaction containing the original issuance of the reissued asset
      *
+     * **Experimental**: this API might change without notice.
+     *
      * Only needed if that issuance transaction does not involve this wallet.
      */
 open func issuanceTx(tx: Transaction)throws   {try rustCallWithError(FfiConverterTypeLwkError_lift) {
     uniffi_lwk_fn_method_reissuancerequest_issuance_tx(self.uniffiClonePointer(),
         FfiConverterTypeTransaction_lower(tx),$0
+    )
+}
+}
+    
+    /**
+     * Pin this reissuance to the reissuance token utxo spent by `input`
+     *
+     * **Experimental**: this API might change without notice.
+     *
+     * `input` must hold the reissuance token of the asset being reissued, otherwise
+     * [`TxBuilder::finish()`] will error. If it is not already an input of the transaction it is
+     * added, unless a manual inputs order is set, in which case it must be one of the outpoints
+     * passed to [`TxBuilder::set_inputs_order()`].
+     *
+     * If not called, the reissuance is assigned to the first input holding the token.
+     */
+open func pinInput(input: OutPoint)throws   {try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_reissuancerequest_pin_input(self.uniffiClonePointer(),
+        FfiConverterTypeOutPoint_lower(input),$0
     )
 }
 }
@@ -13151,6 +13687,11 @@ public protocol SignerProtocol: AnyObject, Sendable {
     func deriveBip85Mnemonic(index: UInt32, wordCount: UInt32) throws  -> Mnemonic
     
     /**
+     * Derive an xpub at `path`
+     */
+    func deriveXpub(path: DerivationPath) throws  -> DescriptorPublicKey
+    
+    /**
      * Return the signer fingerprint
      */
     func fingerprint() throws  -> String
@@ -13159,11 +13700,6 @@ public protocol SignerProtocol: AnyObject, Sendable {
      * Return keyorigin and xpub, like "[73c5da0a/84h/1h/0h]tpub..."
      */
     func keyoriginXpub(bip: Bip) throws  -> String
-    
-    /**
-     * Derive an xpub at `path` and return it as a keyorigin xpub string
-     */
-    func keyoriginXpubFromPath(path: DerivationPath) throws  -> String
     
     /**
      * Get the mnemonic of the signer
@@ -13187,6 +13723,27 @@ public protocol SignerProtocol: AnyObject, Sendable {
      * Return the signer slip77 master blinding key
      */
     func slip77MasterBlindingKey() throws  -> String
+    
+    /**
+     * Derive a "standard" single sig descriptor
+     *
+     * **Experimental**: this API might change without notice.
+     *
+     * `account_type` must "wpkh", "shwpkh" or "tr".
+     *
+     * These are the "standard" single sig descriptors derived and
+     * used by common Liquid wallets. Their derivation is not
+     * specified in any ELIP.
+     *
+     * The unblinded descriptor follows BIP44/BIP49/BIP84/BIP86.
+     *
+     * They use a SLIP77 descriptor blinding key, however all
+     * accounts use the same descriptor blinding key. This has the
+     * undesirable consequence that if you share the CT descriptor
+     * for one account, you reveal the descriptor blinding key used
+     * by all other accounts.
+     */
+    func ssDesc(accountType: String, accountNum: UInt32) throws  -> WolletDescriptor
     
     /**
      * Return the witness public key hash, slip77 descriptor of this signer
@@ -13331,6 +13888,17 @@ open func deriveBip85Mnemonic(index: UInt32, wordCount: UInt32)throws  -> Mnemon
 }
     
     /**
+     * Derive an xpub at `path`
+     */
+open func deriveXpub(path: DerivationPath)throws  -> DescriptorPublicKey  {
+    return try  FfiConverterTypeDescriptorPublicKey_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_signer_derive_xpub(self.uniffiClonePointer(),
+        FfiConverterTypeDerivationPath_lower(path),$0
+    )
+})
+}
+    
+    /**
      * Return the signer fingerprint
      */
 open func fingerprint()throws  -> String  {
@@ -13347,17 +13915,6 @@ open func keyoriginXpub(bip: Bip)throws  -> String  {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
     uniffi_lwk_fn_method_signer_keyorigin_xpub(self.uniffiClonePointer(),
         FfiConverterTypeBip_lower(bip),$0
-    )
-})
-}
-    
-    /**
-     * Derive an xpub at `path` and return it as a keyorigin xpub string
-     */
-open func keyoriginXpubFromPath(path: DerivationPath)throws  -> String  {
-    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
-    uniffi_lwk_fn_method_signer_keyorigin_xpub_from_path(self.uniffiClonePointer(),
-        FfiConverterTypeDerivationPath_lower(path),$0
     )
 })
 }
@@ -13404,6 +13961,34 @@ open func singlesigDesc(scriptVariant: Singlesig, blindingVariant: DescriptorBli
 open func slip77MasterBlindingKey()throws  -> String  {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
     uniffi_lwk_fn_method_signer_slip77_master_blinding_key(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Derive a "standard" single sig descriptor
+     *
+     * **Experimental**: this API might change without notice.
+     *
+     * `account_type` must "wpkh", "shwpkh" or "tr".
+     *
+     * These are the "standard" single sig descriptors derived and
+     * used by common Liquid wallets. Their derivation is not
+     * specified in any ELIP.
+     *
+     * The unblinded descriptor follows BIP44/BIP49/BIP84/BIP86.
+     *
+     * They use a SLIP77 descriptor blinding key, however all
+     * accounts use the same descriptor blinding key. This has the
+     * undesirable consequence that if you share the CT descriptor
+     * for one account, you reveal the descriptor blinding key used
+     * by all other accounts.
+     */
+open func ssDesc(accountType: String, accountNum: UInt32)throws  -> WolletDescriptor  {
+    return try  FfiConverterTypeWolletDescriptor_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_signer_ss_desc(self.uniffiClonePointer(),
+        FfiConverterString.lower(accountType),
+        FfiConverterUInt32.lower(accountNum),$0
     )
 })
 }
@@ -16581,7 +17166,9 @@ public protocol WaterfallsClientProtocol: AnyObject, Sendable {
     func fullScanToIndex(wollet: Wollet, index: UInt32) throws  -> Update?
     
     /**
-     * Whether the descriptor has any tx using the first `gap_limit` addresses (default 20)
+     * Returns true if the wallet has any tx using the first gap_limit addresses (default 20)
+     *
+     * Note: if the descriptor does not have a wildcard, gap limit is ignored.
      */
     func hasTxs(descriptor: WolletDescriptor, gapLimit: UInt32?) throws  -> Bool
     
@@ -16713,7 +17300,9 @@ open func fullScanToIndex(wollet: Wollet, index: UInt32)throws  -> Update?  {
 }
     
     /**
-     * Whether the descriptor has any tx using the first `gap_limit` addresses (default 20)
+     * Returns true if the wallet has any tx using the first gap_limit addresses (default 20)
+     *
+     * Note: if the descriptor does not have a wildcard, gap limit is ignored.
      */
 open func hasTxs(descriptor: WolletDescriptor, gapLimit: UInt32?)throws  -> Bool  {
     return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
@@ -17904,22 +18493,29 @@ public convenience init(descriptor: String)throws  {
 
     
     /**
-     * Descriptor from xpub
+     * Same as `Signer::ss_desc` but with data obtained from a
+     * signer managed externally.
      *
-     * This should be used when the xpub is obtained from a signer
-     * (e.g. Jade) managed outside LWK.
+     * Caller must ensure that:
+     * * `master_blinding_key` is derived from the signer, and wrapped in "slip77(...)", as
+     * returned by `Signer::slip77_master_blinding_key`
+     * * `key` must be the signer keyorigin xpub, i.e. its fingerprint must be the signer
+     * master fingerprint, and its xpub must be the one derived at path
+     * `DerivationPath::ss_path(network, account_type, account_num)`.
      *
-     * If master blinding key is SLIP77, it must be wrapped in "slip77(...)"
+     * **Warning**: Passing incorrect signer data can lead to creating an incorrect
+     * descriptor, which could lead to loss of funds.
+     *
+     * **Experimental**: this API might change without notice.
      */
-public static func fromXpub(network: Network, accountType: String, accountNum: UInt32, masterBlindingKey: String, fingerprint: String, xpub: String)throws  -> WolletDescriptor  {
+public static func ssDescFromExternalSigner(network: Network, accountType: String, accountNum: UInt32, masterBlindingKey: String, key: DescriptorPublicKey)throws  -> WolletDescriptor  {
     return try  FfiConverterTypeWolletDescriptor_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
-    uniffi_lwk_fn_constructor_wolletdescriptor_from_xpub(
+    uniffi_lwk_fn_constructor_wolletdescriptor_ss_desc_from_external_signer(
         FfiConverterTypeNetwork_lower(network),
         FfiConverterString.lower(accountType),
         FfiConverterUInt32.lower(accountNum),
         FfiConverterString.lower(masterBlindingKey),
-        FfiConverterString.lower(fingerprint),
-        FfiConverterString.lower(xpub),$0
+        FfiConverterTypeDescriptorPublicKey_lower(key),$0
     )
 })
 }
@@ -20264,6 +20860,30 @@ fileprivate struct FfiConverterOptionTypeContract: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionTypeDerivationPath: FfiConverterRustBuffer {
+    typealias SwiftType = DerivationPath?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeDerivationPath.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeDerivationPath.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeForeignStoreLink: FfiConverterRustBuffer {
     typealias SwiftType = ForeignStoreLink?
 
@@ -20845,6 +21465,31 @@ fileprivate struct FfiConverterSequenceTypeOutPoint: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterSequenceTypeOutputDetails: FfiConverterRustBuffer {
+    typealias SwiftType = [OutputDetails]
+
+    public static func write(_ value: [OutputDetails], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeOutputDetails.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [OutputDetails] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [OutputDetails]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeOutputDetails.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypePsetInput: FfiConverterRustBuffer {
     typealias SwiftType = [PsetInput]
 
@@ -21365,22 +22010,22 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_amp2_descriptor_from_str() != 47737) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_amp2_elip153_from_signer() != 1406) {
+    if (uniffi_lwk_checksum_method_amp2_elip153_from_external_signer() != 30760) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_amp2_elip153_from_str() != 43116) {
+    if (uniffi_lwk_checksum_method_amp2_elip153_from_signer() != 59080) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_amp2_elip153_user_path() != 17407) {
+    if (uniffi_lwk_checksum_method_amp2_elip153_user_path() != 29071) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_amp2_elip153_view_path() != 63960) {
+    if (uniffi_lwk_checksum_method_amp2_elip153_view_path() != 60413) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_amp2_register_wallet() != 64376) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_amp2descriptor_descriptor() != 61502) {
+    if (uniffi_lwk_checksum_method_amp2descriptor_descriptor() != 28560) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_assetamount_amount() != 49734) {
@@ -21611,6 +22256,15 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_derivationpath_to_vec() != 25747) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_lwk_checksum_method_descriptorpublickey_derivation_path() != 30408) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_descriptorpublickey_fingerprint() != 55003) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_descriptorpublickey_xpub() != 29683) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_lwk_checksum_method_electrumclient_broadcast() != 47006) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -21623,7 +22277,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_electrumclient_get_tx() != 33161) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_electrumclient_has_txs() != 53069) {
+    if (uniffi_lwk_checksum_method_electrumclient_has_txs() != 47355) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_electrumclient_ping() != 58048) {
@@ -21641,7 +22295,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_esploraclient_full_scan_to_index() != 5341) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_esploraclient_has_txs() != 53120) {
+    if (uniffi_lwk_checksum_method_esploraclient_has_txs() != 4834) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_esploraclient_tip() != 31289) {
@@ -21737,7 +22391,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_issuancerequest_contract() != 29893) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_issuancerequest_pin_input() != 8104) {
+    if (uniffi_lwk_checksum_method_issuancerequest_pin_input() != 39502) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_lightningpayment_bolt11_invoice() != 47603) {
@@ -21890,6 +22544,33 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_outpoint_vout() != 28332) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_lwk_checksum_method_outputdetails_asset() != 42838) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_outputdetails_derivation_path() != 19263) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_outputdetails_is_fee() != 10459) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_outputdetails_is_fully_confidential() != 40228) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_outputdetails_is_fully_explicit() != 47050) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_outputdetails_is_owned() != 34815) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_outputdetails_satoshi() != 13501) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_outputdetails_script_pubkey() != 21061) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_outputdetails_vout() != 11256) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_lwk_checksum_method_payment_bip21() != 43062) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -22034,7 +22715,13 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_psetdetails_fingerprints_missing() != 9065) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_lwk_checksum_method_psetdetails_has_non_default_sighash() != 50087) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_lwk_checksum_method_psetdetails_inputs_issuances() != 33153) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_psetdetails_outputs() != 3112) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_psetdetails_signatures() != 7984) {
@@ -22109,7 +22796,10 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_reissuancerequest_add_asset_output() != 9922) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_reissuancerequest_issuance_tx() != 62641) {
+    if (uniffi_lwk_checksum_method_reissuancerequest_issuance_tx() != 60162) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_reissuancerequest_pin_input() != 5211) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_script_bytes() != 57904) {
@@ -22145,13 +22835,13 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_signer_derive_bip85_mnemonic() != 32162) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_lwk_checksum_method_signer_derive_xpub() != 26077) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_lwk_checksum_method_signer_fingerprint() != 51686) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_signer_keyorigin_xpub() != 48213) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_lwk_checksum_method_signer_keyorigin_xpub_from_path() != 46810) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_signer_mnemonic() != 41786) {
@@ -22164,6 +22854,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_signer_slip77_master_blinding_key() != 6040) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_signer_ss_desc() != 53820) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_signer_wpkh_slip77_descriptor() != 50399) {
@@ -22394,7 +23087,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_waterfallsclient_full_scan_to_index() != 12641) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_waterfallsclient_has_txs() != 30365) {
+    if (uniffi_lwk_checksum_method_waterfallsclient_has_txs() != 12000) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_waterfallsclient_subscribe() != 62222) {
@@ -22577,13 +23270,16 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_constructor_customelementsnetworkbuilder_new() != 38068) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_constructor_derivationpath_from_account() != 35229) {
-        return InitializationResult.apiChecksumMismatch
-    }
     if (uniffi_lwk_checksum_constructor_derivationpath_from_vec() != 4058) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_constructor_derivationpath_new() != 44555) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_constructor_derivationpath_ss_path() != 49644) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_constructor_descriptorpublickey_new() != 4499) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_constructor_electrumclient_from_builder() != 14213) {
@@ -22769,10 +23465,10 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_constructor_wolletbuilder_new() != 41459) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_constructor_wolletdescriptor_from_xpub() != 10212) {
+    if (uniffi_lwk_checksum_constructor_wolletdescriptor_new() != 61281) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_constructor_wolletdescriptor_new() != 61281) {
+    if (uniffi_lwk_checksum_constructor_wolletdescriptor_ss_desc_from_external_signer() != 27449) {
         return InitializationResult.apiChecksumMismatch
     }
 
