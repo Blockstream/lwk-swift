@@ -47,7 +47,7 @@ jobs:
         run: |
           echo "RUNNER_IMAGE=${ImageOS:-unknown}-${ImageVersion:-unknown}" >> "$GITHUB_ENV"
       - name: Setup rust toolchain
-        uses: dtolnay/rust-toolchain@bc540ba06a4ccee415bb241490e0b25ee8e7d315 # 1.85.0
+        uses: dtolnay/rust-toolchain@0e58746831d1ffcee8fcebf0aebabfaf3d5a88be # 1.91.0
         with:
           targets: x86_64-apple-ios,aarch64-apple-ios,aarch64-apple-ios-sim
       - name: Setup just
