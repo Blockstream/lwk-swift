@@ -8943,511 +8943,6 @@ public func FfiConverterTypeLoggingLink_lower(_ value: LoggingLink) -> UnsafeMut
 
 
 /**
- * Test environment
- *
- * Regtest with:
- * * Elements node
- * * Electrum server
- * * Esplora server
- * * Waterfalls server
- *
- * Wrapper over [`lwk_test_util::TestEnv`]
- */
-public protocol LwkTestEnvProtocol: AnyObject, Sendable {
-    
-    /**
-     * Get the AMP2 URL of the test environment
-     */
-    func amp2Url()  -> String
-    
-    /**
-     * Get the Electrum URL of the test environment
-     */
-    func electrumUrl()  -> String
-    
-    /**
-     * Get the Esplora URL of the test environment
-     */
-    func esploraUrl()  -> String
-    
-    /**
-     * Generate `blocks` blocks from the node
-     */
-    func generate(blocks: UInt32) 
-    
-    /**
-     * Get the genesis block hash from the running node.
-     */
-    func genesisBlockHash()  -> String
-    
-    /**
-     * Get a new address from the node
-     */
-    func getNewAddress()  -> Address
-    
-    /**
-     * Get the height of the node
-     */
-    func height()  -> UInt64
-    
-    /**
-     * Issue `satoshi` of an asset from the node
-     */
-    func issueAsset(satoshi: UInt64)  -> AssetId
-    
-    /**
-     * Get the network of the test environment.
-     */
-    func network()  -> Network
-    
-    /**
-     * Send `satoshi` to `address` from the node
-     */
-    func sendToAddress(address: Address, satoshi: UInt64, asset: AssetId?)  -> Txid
-    
-    /**
-     * Get the Waterfalls URL of the test environment
-     */
-    func waterfallsUrl()  -> String
-    
-}
-/**
- * Test environment
- *
- * Regtest with:
- * * Elements node
- * * Electrum server
- * * Esplora server
- * * Waterfalls server
- *
- * Wrapper over [`lwk_test_util::TestEnv`]
- */
-open class LwkTestEnv: LwkTestEnvProtocol, @unchecked Sendable {
-    fileprivate let pointer: UnsafeMutableRawPointer!
-
-    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
-    public struct NoPointer {
-        public init() {}
-    }
-
-    // TODO: We'd like this to be `private` but for Swifty reasons,
-    // we can't implement `FfiConverter` without making this `required` and we can't
-    // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
-    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
-        self.pointer = pointer
-    }
-
-    // This constructor can be used to instantiate a fake object.
-    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    //
-    // - Warning:
-    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
-    public init(noPointer: NoPointer) {
-        self.pointer = nil
-    }
-
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
-    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_lwk_fn_clone_lwktestenv(self.pointer, $0) }
-    }
-    /**
-     * Creates a new test environment
-     */
-public convenience init() {
-    let pointer =
-        try! rustCall() {
-    uniffi_lwk_fn_constructor_lwktestenv_new($0
-    )
-}
-    self.init(unsafeFromRawPointer: pointer)
-}
-
-    deinit {
-        guard let pointer = pointer else {
-            return
-        }
-
-        try! rustCall { uniffi_lwk_fn_free_lwktestenv(pointer, $0) }
-    }
-
-    
-    /**
-     * Creates a new test environment with AMP2 mock
-     */
-public static func newWithAmp2() -> LwkTestEnv  {
-    return try!  FfiConverterTypeLwkTestEnv_lift(try! rustCall() {
-    uniffi_lwk_fn_constructor_lwktestenv_new_with_amp2($0
-    )
-})
-}
-    
-
-    
-    /**
-     * Get the AMP2 URL of the test environment
-     */
-open func amp2Url() -> String  {
-    return try!  FfiConverterString.lift(try! rustCall() {
-    uniffi_lwk_fn_method_lwktestenv_amp2_url(self.uniffiClonePointer(),$0
-    )
-})
-}
-    
-    /**
-     * Get the Electrum URL of the test environment
-     */
-open func electrumUrl() -> String  {
-    return try!  FfiConverterString.lift(try! rustCall() {
-    uniffi_lwk_fn_method_lwktestenv_electrum_url(self.uniffiClonePointer(),$0
-    )
-})
-}
-    
-    /**
-     * Get the Esplora URL of the test environment
-     */
-open func esploraUrl() -> String  {
-    return try!  FfiConverterString.lift(try! rustCall() {
-    uniffi_lwk_fn_method_lwktestenv_esplora_url(self.uniffiClonePointer(),$0
-    )
-})
-}
-    
-    /**
-     * Generate `blocks` blocks from the node
-     */
-open func generate(blocks: UInt32)  {try! rustCall() {
-    uniffi_lwk_fn_method_lwktestenv_generate(self.uniffiClonePointer(),
-        FfiConverterUInt32.lower(blocks),$0
-    )
-}
-}
-    
-    /**
-     * Get the genesis block hash from the running node.
-     */
-open func genesisBlockHash() -> String  {
-    return try!  FfiConverterString.lift(try! rustCall() {
-    uniffi_lwk_fn_method_lwktestenv_genesis_block_hash(self.uniffiClonePointer(),$0
-    )
-})
-}
-    
-    /**
-     * Get a new address from the node
-     */
-open func getNewAddress() -> Address  {
-    return try!  FfiConverterTypeAddress_lift(try! rustCall() {
-    uniffi_lwk_fn_method_lwktestenv_get_new_address(self.uniffiClonePointer(),$0
-    )
-})
-}
-    
-    /**
-     * Get the height of the node
-     */
-open func height() -> UInt64  {
-    return try!  FfiConverterUInt64.lift(try! rustCall() {
-    uniffi_lwk_fn_method_lwktestenv_height(self.uniffiClonePointer(),$0
-    )
-})
-}
-    
-    /**
-     * Issue `satoshi` of an asset from the node
-     */
-open func issueAsset(satoshi: UInt64) -> AssetId  {
-    return try!  FfiConverterTypeAssetId_lift(try! rustCall() {
-    uniffi_lwk_fn_method_lwktestenv_issue_asset(self.uniffiClonePointer(),
-        FfiConverterUInt64.lower(satoshi),$0
-    )
-})
-}
-    
-    /**
-     * Get the network of the test environment.
-     */
-open func network() -> Network  {
-    return try!  FfiConverterTypeNetwork_lift(try! rustCall() {
-    uniffi_lwk_fn_method_lwktestenv_network(self.uniffiClonePointer(),$0
-    )
-})
-}
-    
-    /**
-     * Send `satoshi` to `address` from the node
-     */
-open func sendToAddress(address: Address, satoshi: UInt64, asset: AssetId?) -> Txid  {
-    return try!  FfiConverterTypeTxid_lift(try! rustCall() {
-    uniffi_lwk_fn_method_lwktestenv_send_to_address(self.uniffiClonePointer(),
-        FfiConverterTypeAddress_lower(address),
-        FfiConverterUInt64.lower(satoshi),
-        FfiConverterOptionTypeAssetId.lower(asset),$0
-    )
-})
-}
-    
-    /**
-     * Get the Waterfalls URL of the test environment
-     */
-open func waterfallsUrl() -> String  {
-    return try!  FfiConverterString.lift(try! rustCall() {
-    uniffi_lwk_fn_method_lwktestenv_waterfalls_url(self.uniffiClonePointer(),$0
-    )
-})
-}
-    
-
-}
-
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public struct FfiConverterTypeLwkTestEnv: FfiConverter {
-
-    typealias FfiType = UnsafeMutableRawPointer
-    typealias SwiftType = LwkTestEnv
-
-    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> LwkTestEnv {
-        return LwkTestEnv(unsafeFromRawPointer: pointer)
-    }
-
-    public static func lower(_ value: LwkTestEnv) -> UnsafeMutableRawPointer {
-        return value.uniffiClonePointer()
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LwkTestEnv {
-        let v: UInt64 = try readInt(&buf)
-        // The Rust code won't compile if a pointer won't fit in a UInt64.
-        // We have to go via `UInt` because that's the thing that's the size of a pointer.
-        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if (ptr == nil) {
-            throw UniffiInternalError.unexpectedNullPointer
-        }
-        return try lift(ptr!)
-    }
-
-    public static func write(_ value: LwkTestEnv, into buf: inout [UInt8]) {
-        // This fiddling is because `Int` is the thing that's the same size as a pointer.
-        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
-        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
-    }
-}
-
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeLwkTestEnv_lift(_ pointer: UnsafeMutableRawPointer) throws -> LwkTestEnv {
-    return try FfiConverterTypeLwkTestEnv.lift(pointer)
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeLwkTestEnv_lower(_ value: LwkTestEnv) -> UnsafeMutableRawPointer {
-    return FfiConverterTypeLwkTestEnv.lower(value)
-}
-
-
-
-
-
-
-/**
- * A lightweight test helper for [`ForeignStore`](crate::ForeignStore) implementations.
- *
- * Use this to verify that Rust can correctly read/write through an FFI store.
- */
-public protocol LwkTestStoreProtocol: AnyObject, Sendable {
-    
-    /**
-     * Read a value from the store.
-     */
-    func read(key: String) throws  -> Data?
-    
-    /**
-     * Remove a key from the store.
-     */
-    func remove(key: String) throws 
-    
-    /**
-     * Write a key-value pair to the store.
-     */
-    func write(key: String, value: Data) throws 
-    
-}
-/**
- * A lightweight test helper for [`ForeignStore`](crate::ForeignStore) implementations.
- *
- * Use this to verify that Rust can correctly read/write through an FFI store.
- */
-open class LwkTestStore: LwkTestStoreProtocol, @unchecked Sendable {
-    fileprivate let pointer: UnsafeMutableRawPointer!
-
-    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
-    public struct NoPointer {
-        public init() {}
-    }
-
-    // TODO: We'd like this to be `private` but for Swifty reasons,
-    // we can't implement `FfiConverter` without making this `required` and we can't
-    // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
-    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
-        self.pointer = pointer
-    }
-
-    // This constructor can be used to instantiate a fake object.
-    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    //
-    // - Warning:
-    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
-    public init(noPointer: NoPointer) {
-        self.pointer = nil
-    }
-
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
-    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_lwk_fn_clone_lwkteststore(self.pointer, $0) }
-    }
-    /**
-     * Create a new test store helper wrapping the given store.
-     */
-public convenience init(store: ForeignStoreLink) {
-    let pointer =
-        try! rustCall() {
-    uniffi_lwk_fn_constructor_lwkteststore_new(
-        FfiConverterTypeForeignStoreLink_lower(store),$0
-    )
-}
-    self.init(unsafeFromRawPointer: pointer)
-}
-
-    deinit {
-        guard let pointer = pointer else {
-            return
-        }
-
-        try! rustCall { uniffi_lwk_fn_free_lwkteststore(pointer, $0) }
-    }
-
-    
-
-    
-    /**
-     * Read a value from the store.
-     */
-open func read(key: String)throws  -> Data?  {
-    return try  FfiConverterOptionData.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
-    uniffi_lwk_fn_method_lwkteststore_read(self.uniffiClonePointer(),
-        FfiConverterString.lower(key),$0
-    )
-})
-}
-    
-    /**
-     * Remove a key from the store.
-     */
-open func remove(key: String)throws   {try rustCallWithError(FfiConverterTypeLwkError_lift) {
-    uniffi_lwk_fn_method_lwkteststore_remove(self.uniffiClonePointer(),
-        FfiConverterString.lower(key),$0
-    )
-}
-}
-    
-    /**
-     * Write a key-value pair to the store.
-     */
-open func write(key: String, value: Data)throws   {try rustCallWithError(FfiConverterTypeLwkError_lift) {
-    uniffi_lwk_fn_method_lwkteststore_write(self.uniffiClonePointer(),
-        FfiConverterString.lower(key),
-        FfiConverterData.lower(value),$0
-    )
-}
-}
-    
-
-}
-
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public struct FfiConverterTypeLwkTestStore: FfiConverter {
-
-    typealias FfiType = UnsafeMutableRawPointer
-    typealias SwiftType = LwkTestStore
-
-    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> LwkTestStore {
-        return LwkTestStore(unsafeFromRawPointer: pointer)
-    }
-
-    public static func lower(_ value: LwkTestStore) -> UnsafeMutableRawPointer {
-        return value.uniffiClonePointer()
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LwkTestStore {
-        let v: UInt64 = try readInt(&buf)
-        // The Rust code won't compile if a pointer won't fit in a UInt64.
-        // We have to go via `UInt` because that's the thing that's the size of a pointer.
-        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if (ptr == nil) {
-            throw UniffiInternalError.unexpectedNullPointer
-        }
-        return try lift(ptr!)
-    }
-
-    public static func write(_ value: LwkTestStore, into buf: inout [UInt8]) {
-        // This fiddling is because `Int` is the thing that's the same size as a pointer.
-        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
-        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
-    }
-}
-
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeLwkTestStore_lift(_ pointer: UnsafeMutableRawPointer) throws -> LwkTestStore {
-    return try FfiConverterTypeLwkTestStore.lift(pointer)
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeLwkTestStore_lower(_ value: LwkTestStore) -> UnsafeMutableRawPointer {
-    return FfiConverterTypeLwkTestStore.lower(value)
-}
-
-
-
-
-
-
-/**
  * Wrapper over [`bip39::Mnemonic`]
  */
 public protocol MnemonicProtocol: AnyObject, Sendable {
@@ -11872,12 +11367,12 @@ public protocol PsetDetailsProtocol: AnyObject, Sendable {
     func balance()  -> PsetBalance
     
     /**
-     * Set of fingerprints for which the PSET has a signature
+     * Fingerprints for which the PSET has a signature.
      */
     func fingerprintsHas()  -> [String]
     
     /**
-     * Set of fingerprints for which the PSET is missing a signature
+     * Fingerprints for which the PSET is missing a signature.
      */
     func fingerprintsMissing()  -> [String]
     
@@ -11973,7 +11468,7 @@ open func balance() -> PsetBalance  {
 }
     
     /**
-     * Set of fingerprints for which the PSET has a signature
+     * Fingerprints for which the PSET has a signature.
      */
 open func fingerprintsHas() -> [String]  {
     return try!  FfiConverterSequenceString.lift(try! rustCall() {
@@ -11983,7 +11478,7 @@ open func fingerprintsHas() -> [String]  {
 }
     
     /**
-     * Set of fingerprints for which the PSET is missing a signature
+     * Fingerprints for which the PSET is missing a signature.
      */
 open func fingerprintsMissing() -> [String]  {
     return try!  FfiConverterSequenceString.lift(try! rustCall() {
@@ -14575,6 +14070,11 @@ public protocol TxBuilderProtocol: AnyObject, Sendable {
     func addReissuance(request: ReissuanceRequest) throws 
     
     /**
+     * Allow a fee rate higher than 1000000 sats/kvb (1000 sat/vb)
+     */
+    func allowHighFeeRate() throws 
+    
+    /**
      * Sets the address to drain excess L-BTC to
      */
     func drainLbtcTo(address: Address) throws 
@@ -14856,6 +14356,15 @@ open func addRecipient(address: Address, satoshi: UInt64, asset: AssetId)throws 
 open func addReissuance(request: ReissuanceRequest)throws   {try rustCallWithError(FfiConverterTypeLwkError_lift) {
     uniffi_lwk_fn_method_txbuilder_add_reissuance(self.uniffiClonePointer(),
         FfiConverterTypeReissuanceRequest_lower(request),$0
+    )
+}
+}
+    
+    /**
+     * Allow a fee rate higher than 1000000 sats/kvb (1000 sat/vb)
+     */
+open func allowHighFeeRate()throws   {try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_txbuilder_allow_high_fee_rate(self.uniffiClonePointer(),$0
     )
 }
 }
@@ -15942,7 +15451,13 @@ public func FfiConverterTypeTxid_lower(_ value: Txid) -> UnsafeMutableRawPointer
 public protocol UnvalidatedLiquidexProposalProtocol: AnyObject, Sendable {
     
     /**
-     * Validate the proposal output but not the input wich require fetching the previous transaction
+     * Validate the proposal in an insecure way
+     *
+     * Warning: using this method can lead to loss of funds.
+     * This method performs partial validation, which could be leveraged by potential attackers.
+     * Use it only if you properly understand the risks.
+     *
+     * In general, prefer using `validate()`.
      */
     func insecureValidate() throws  -> ValidatedLiquidexProposal
     
@@ -16044,7 +15559,13 @@ public static func fromPset(pset: Pset)throws  -> UnvalidatedLiquidexProposal  {
 
     
     /**
-     * Validate the proposal output but not the input wich require fetching the previous transaction
+     * Validate the proposal in an insecure way
+     *
+     * Warning: using this method can lead to loss of funds.
+     * This method performs partial validation, which could be leveraged by potential attackers.
+     * Use it only if you properly understand the risks.
+     *
+     * In general, prefer using `validate()`.
      */
 open func insecureValidate()throws  -> ValidatedLiquidexProposal  {
     return try  FfiConverterTypeValidatedLiquidexProposal_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
@@ -17181,6 +16702,16 @@ public protocol WaterfallsClientProtocol: AnyObject, Sendable {
     func subscribe(descriptor: WolletDescriptor) throws  -> WaterfallsSubscription
     
     /**
+     * Subscribe to Waterfalls descriptor updates and reopen after disconnects.
+     *
+     * The stream reports server events and `Disconnected`/`Reconnected` status
+     * updates. Scan the wallet after `Reconnected` because events may have been
+     * missed. Reconnect failures are returned by `next_update()`; the worker
+     * retries after one second.
+     */
+    func subscribeReconnecting(descriptor: WolletDescriptor) throws  -> WaterfallsReconnectingSubscription
+    
+    /**
      * See [`BlockchainBackend::tip`]
      */
     func tip() throws  -> BlockHeader
@@ -17328,6 +16859,22 @@ open func subscribe(descriptor: WolletDescriptor)throws  -> WaterfallsSubscripti
 }
     
     /**
+     * Subscribe to Waterfalls descriptor updates and reopen after disconnects.
+     *
+     * The stream reports server events and `Disconnected`/`Reconnected` status
+     * updates. Scan the wallet after `Reconnected` because events may have been
+     * missed. Reconnect failures are returned by `next_update()`; the worker
+     * retries after one second.
+     */
+open func subscribeReconnecting(descriptor: WolletDescriptor)throws  -> WaterfallsReconnectingSubscription  {
+    return try  FfiConverterTypeWaterfallsReconnectingSubscription_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_waterfallsclient_subscribe_reconnecting(self.uniffiClonePointer(),
+        FfiConverterTypeWolletDescriptor_lower(descriptor),$0
+    )
+})
+}
+    
+    /**
      * See [`BlockchainBackend::tip`]
      */
 open func tip()throws  -> BlockHeader  {
@@ -17388,6 +16935,160 @@ public func FfiConverterTypeWaterfallsClient_lift(_ pointer: UnsafeMutableRawPoi
 #endif
 public func FfiConverterTypeWaterfallsClient_lower(_ value: WaterfallsClient) -> UnsafeMutableRawPointer {
     return FfiConverterTypeWaterfallsClient.lower(value)
+}
+
+
+
+
+
+
+/**
+ * A Waterfalls descriptor subscription that reopens after disconnects.
+ */
+public protocol WaterfallsReconnectingSubscriptionProtocol: AnyObject, Sendable {
+    
+    /**
+     * Stop the subscription stream and release its worker thread.
+     */
+    func closeSubscription() 
+    
+    /**
+     * Return the next server event or connection status update.
+     *
+     * Returns `None` after `close_subscription()` is called. Reconnect failures
+     * are returned as errors; the subscription continues retrying in the background.
+     */
+    func nextUpdate() throws  -> WaterfallsSubscriptionUpdate?
+    
+}
+/**
+ * A Waterfalls descriptor subscription that reopens after disconnects.
+ */
+open class WaterfallsReconnectingSubscription: WaterfallsReconnectingSubscriptionProtocol, @unchecked Sendable {
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
+    }
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_lwk_fn_clone_waterfallsreconnectingsubscription(self.pointer, $0) }
+    }
+    // No primary constructor declared for this class.
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_lwk_fn_free_waterfallsreconnectingsubscription(pointer, $0) }
+    }
+
+    
+
+    
+    /**
+     * Stop the subscription stream and release its worker thread.
+     */
+open func closeSubscription()  {try! rustCall() {
+    uniffi_lwk_fn_method_waterfallsreconnectingsubscription_close_subscription(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
+    /**
+     * Return the next server event or connection status update.
+     *
+     * Returns `None` after `close_subscription()` is called. Reconnect failures
+     * are returned as errors; the subscription continues retrying in the background.
+     */
+open func nextUpdate()throws  -> WaterfallsSubscriptionUpdate?  {
+    return try  FfiConverterOptionTypeWaterfallsSubscriptionUpdate.lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_waterfallsreconnectingsubscription_next_update(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeWaterfallsReconnectingSubscription: FfiConverter {
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = WaterfallsReconnectingSubscription
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> WaterfallsReconnectingSubscription {
+        return WaterfallsReconnectingSubscription(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: WaterfallsReconnectingSubscription) -> UnsafeMutableRawPointer {
+        return value.uniffiClonePointer()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> WaterfallsReconnectingSubscription {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: WaterfallsReconnectingSubscription, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeWaterfallsReconnectingSubscription_lift(_ pointer: UnsafeMutableRawPointer) throws -> WaterfallsReconnectingSubscription {
+    return try FfiConverterTypeWaterfallsReconnectingSubscription.lift(pointer)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeWaterfallsReconnectingSubscription_lower(_ value: WaterfallsReconnectingSubscription) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeWaterfallsReconnectingSubscription.lower(value)
 }
 
 
@@ -17684,6 +17385,10 @@ public protocol WolletProtocol: AnyObject, Sendable {
      *
      * If Some return the address at the given index,
      * otherwise the last unused address.
+     *
+     * Returns an error when an index is supplied for a descriptor without a
+     * wildcard, or when no index is supplied for a wallet backed by a fixed
+     * list of script pubkeys.
      */
     func address(index: UInt32?) throws  -> AddressResult
     
@@ -17768,6 +17473,14 @@ public protocol WolletProtocol: AnyObject, Sendable {
      * Get the PSET details with respect to the wallet
      */
     func psetDetails(pset: Pset) throws  -> PsetDetails
+    
+    /**
+     * Set the highest AMP0 address index the tx builder is allowed to use
+     *
+     * Call this with the AMP0 context after creating the `Wollet` and every time
+     * `Amp0::address()` returns a new address.
+     */
+    func setAmp0LastIndex(amp0: Amp0) throws 
     
     /**
      * Get all the wallet transaction
@@ -17904,6 +17617,10 @@ open func addDetails(pset: Pset)throws  -> Pset  {
      *
      * If Some return the address at the given index,
      * otherwise the last unused address.
+     *
+     * Returns an error when an index is supplied for a descriptor without a
+     * wildcard, or when no index is supplied for a wallet backed by a fixed
+     * list of script pubkeys.
      */
 open func address(index: UInt32?)throws  -> AddressResult  {
     return try  FfiConverterTypeAddressResult_lift(try rustCallWithError(FfiConverterTypeLwkError_lift) {
@@ -18051,6 +17768,19 @@ open func psetDetails(pset: Pset)throws  -> PsetDetails  {
         FfiConverterTypePset_lower(pset),$0
     )
 })
+}
+    
+    /**
+     * Set the highest AMP0 address index the tx builder is allowed to use
+     *
+     * Call this with the AMP0 context after creating the `Wollet` and every time
+     * `Amp0::address()` returns a new address.
+     */
+open func setAmp0LastIndex(amp0: Amp0)throws   {try rustCallWithError(FfiConverterTypeLwkError_lift) {
+    uniffi_lwk_fn_method_wollet_set_amp0_last_index(self.uniffiClonePointer(),
+        FfiConverterTypeAmp0_lower(amp0),$0
+    )
+}
 }
     
     /**
@@ -18794,7 +18524,7 @@ public func FfiConverterTypeBoltzSessionBuilder_lower(_ value: BoltzSessionBuild
  */
 public struct ElectrumClientBuilder {
     /**
-     * The Electrum server url, e.g. `ssl://blockstream.info:995` or `tcp://host:50001`
+     * The Electrum server url, e.g. `ssl://elements-mainnet.blockstream.info:50002` or `tcp://host:50001`
      */
     public var url: String
     /**
@@ -18816,7 +18546,7 @@ public struct ElectrumClientBuilder {
     // declare one manually.
     public init(
         /**
-         * The Electrum server url, e.g. `ssl://blockstream.info:995` or `tcp://host:50001`
+         * The Electrum server url, e.g. `ssl://elements-mainnet.blockstream.info:50002` or `tcp://host:50001`
          */url: String, 
         /**
          * Request/connection timeout in seconds
@@ -18924,6 +18654,14 @@ public struct EsploraClientBuilder {
      * Token provider for authenticated Esplora and Waterfalls backends
      */
     public var tokenProvider: TokenProvider?
+    /**
+     * Maximum duration in seconds of a scan, default is 10 minutes
+     */
+    public var scanTimeout: UInt32?
+    /**
+     * Maximum size in bytes of a single response, default is 64 MiB
+     */
+    public var maxResponseSize: UInt64?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -18933,7 +18671,13 @@ public struct EsploraClientBuilder {
          */headers: [String: String]? = nil, 
         /**
          * Token provider for authenticated Esplora and Waterfalls backends
-         */tokenProvider: TokenProvider? = nil) {
+         */tokenProvider: TokenProvider? = nil, 
+        /**
+         * Maximum duration in seconds of a scan, default is 10 minutes
+         */scanTimeout: UInt32? = nil, 
+        /**
+         * Maximum size in bytes of a single response, default is 64 MiB
+         */maxResponseSize: UInt64? = nil) {
         self.baseUrl = baseUrl
         self.network = network
         self.waterfalls = waterfalls
@@ -18942,6 +18686,8 @@ public struct EsploraClientBuilder {
         self.utxoOnly = utxoOnly
         self.headers = headers
         self.tokenProvider = tokenProvider
+        self.scanTimeout = scanTimeout
+        self.maxResponseSize = maxResponseSize
     }
 }
 
@@ -18965,7 +18711,9 @@ public struct FfiConverterTypeEsploraClientBuilder: FfiConverterRustBuffer {
                 timeout: FfiConverterOptionUInt8.read(from: &buf), 
                 utxoOnly: FfiConverterBool.read(from: &buf), 
                 headers: FfiConverterOptionDictionaryStringString.read(from: &buf), 
-                tokenProvider: FfiConverterOptionTypeTokenProvider.read(from: &buf)
+                tokenProvider: FfiConverterOptionTypeTokenProvider.read(from: &buf), 
+                scanTimeout: FfiConverterOptionUInt32.read(from: &buf), 
+                maxResponseSize: FfiConverterOptionUInt64.read(from: &buf)
         )
     }
 
@@ -18978,6 +18726,8 @@ public struct FfiConverterTypeEsploraClientBuilder: FfiConverterRustBuffer {
         FfiConverterBool.write(value.utxoOnly, into: &buf)
         FfiConverterOptionDictionaryStringString.write(value.headers, into: &buf)
         FfiConverterOptionTypeTokenProvider.write(value.tokenProvider, into: &buf)
+        FfiConverterOptionUInt32.write(value.scanTimeout, into: &buf)
+        FfiConverterOptionUInt64.write(value.maxResponseSize, into: &buf)
     }
 }
 
@@ -19359,6 +19109,14 @@ public struct WaterfallsClientBuilder {
      * Token provider for authenticated Waterfalls backends
      */
     public var tokenProvider: TokenProvider?
+    /**
+     * Maximum duration in seconds of a scan, default is 10 minutes
+     */
+    public var scanTimeout: UInt32?
+    /**
+     * Maximum size in bytes of a single response, default is 64 MiB
+     */
+    public var maxResponseSize: UInt64?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -19368,7 +19126,13 @@ public struct WaterfallsClientBuilder {
          */headers: [String: String]? = nil, 
         /**
          * Token provider for authenticated Waterfalls backends
-         */tokenProvider: TokenProvider? = nil) {
+         */tokenProvider: TokenProvider? = nil, 
+        /**
+         * Maximum duration in seconds of a scan, default is 10 minutes
+         */scanTimeout: UInt32? = nil, 
+        /**
+         * Maximum size in bytes of a single response, default is 64 MiB
+         */maxResponseSize: UInt64? = nil) {
         self.baseUrl = baseUrl
         self.network = network
         self.concurrency = concurrency
@@ -19376,6 +19140,8 @@ public struct WaterfallsClientBuilder {
         self.utxoOnly = utxoOnly
         self.headers = headers
         self.tokenProvider = tokenProvider
+        self.scanTimeout = scanTimeout
+        self.maxResponseSize = maxResponseSize
     }
 }
 
@@ -19398,7 +19164,9 @@ public struct FfiConverterTypeWaterfallsClientBuilder: FfiConverterRustBuffer {
                 timeout: FfiConverterOptionUInt8.read(from: &buf), 
                 utxoOnly: FfiConverterBool.read(from: &buf), 
                 headers: FfiConverterOptionDictionaryStringString.read(from: &buf), 
-                tokenProvider: FfiConverterOptionTypeTokenProvider.read(from: &buf)
+                tokenProvider: FfiConverterOptionTypeTokenProvider.read(from: &buf), 
+                scanTimeout: FfiConverterOptionUInt32.read(from: &buf), 
+                maxResponseSize: FfiConverterOptionUInt64.read(from: &buf)
         )
     }
 
@@ -19410,6 +19178,8 @@ public struct FfiConverterTypeWaterfallsClientBuilder: FfiConverterRustBuffer {
         FfiConverterBool.write(value.utxoOnly, into: &buf)
         FfiConverterOptionDictionaryStringString.write(value.headers, into: &buf)
         FfiConverterOptionTypeTokenProvider.write(value.tokenProvider, into: &buf)
+        FfiConverterOptionUInt32.write(value.scanTimeout, into: &buf)
+        FfiConverterOptionUInt64.write(value.maxResponseSize, into: &buf)
     }
 }
 
@@ -20545,6 +20315,107 @@ extension TokenProvider: Equatable, Hashable {}
 
 
 
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * A server event or a local connection status update.
+ */
+
+public enum WaterfallsSubscriptionUpdate {
+    
+    /**
+     * A Waterfalls server update event.
+     */
+    case event(
+        /**
+         * The Waterfalls server update.
+         */event: WaterfallsSubscriptionEvent
+    )
+    /**
+     * The stream closed or failed. An error is present when it failed.
+     */
+    case disconnected(
+        /**
+         * The cause of the disconnect, if any.
+         */error: String?
+    )
+    /**
+     * The stream reopened. Scan the wallet because events may have been missed.
+     */
+    case reconnected
+}
+
+
+#if compiler(>=6)
+extension WaterfallsSubscriptionUpdate: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeWaterfallsSubscriptionUpdate: FfiConverterRustBuffer {
+    typealias SwiftType = WaterfallsSubscriptionUpdate
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> WaterfallsSubscriptionUpdate {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .event(event: try FfiConverterTypeWaterfallsSubscriptionEvent.read(from: &buf)
+        )
+        
+        case 2: return .disconnected(error: try FfiConverterOptionString.read(from: &buf)
+        )
+        
+        case 3: return .reconnected
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: WaterfallsSubscriptionUpdate, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case let .event(event):
+            writeInt(&buf, Int32(1))
+            FfiConverterTypeWaterfallsSubscriptionEvent.write(event, into: &buf)
+            
+        
+        case let .disconnected(error):
+            writeInt(&buf, Int32(2))
+            FfiConverterOptionString.write(error, into: &buf)
+            
+        
+        case .reconnected:
+            writeInt(&buf, Int32(3))
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeWaterfallsSubscriptionUpdate_lift(_ buf: RustBuffer) throws -> WaterfallsSubscriptionUpdate {
+    return try FfiConverterTypeWaterfallsSubscriptionUpdate.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeWaterfallsSubscriptionUpdate_lower(_ value: WaterfallsSubscriptionUpdate) -> RustBuffer {
+    return FfiConverterTypeWaterfallsSubscriptionUpdate.lower(value)
+}
+
+
+extension WaterfallsSubscriptionUpdate: Equatable, Hashable {}
+
+
+
+
+
+
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -21260,6 +21131,30 @@ fileprivate struct FfiConverterOptionTypeTokenProvider: FfiConverterRustBuffer {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterTypeTokenProvider.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionTypeWaterfallsSubscriptionUpdate: FfiConverterRustBuffer {
+    typealias SwiftType = WaterfallsSubscriptionUpdate?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeWaterfallsSubscriptionUpdate.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeWaterfallsSubscriptionUpdate.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -22469,48 +22364,6 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_logging_log() != 50033) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_lwktestenv_amp2_url() != 23056) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_lwk_checksum_method_lwktestenv_electrum_url() != 44900) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_lwk_checksum_method_lwktestenv_esplora_url() != 37949) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_lwk_checksum_method_lwktestenv_generate() != 57601) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_lwk_checksum_method_lwktestenv_genesis_block_hash() != 32389) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_lwk_checksum_method_lwktestenv_get_new_address() != 18169) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_lwk_checksum_method_lwktestenv_height() != 19939) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_lwk_checksum_method_lwktestenv_issue_asset() != 64492) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_lwk_checksum_method_lwktestenv_network() != 45785) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_lwk_checksum_method_lwktestenv_send_to_address() != 578) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_lwk_checksum_method_lwktestenv_waterfalls_url() != 39201) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_lwk_checksum_method_lwkteststore_read() != 60137) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_lwk_checksum_method_lwkteststore_remove() != 61117) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_lwk_checksum_method_lwkteststore_write() != 36350) {
-        return InitializationResult.apiChecksumMismatch
-    }
     if (uniffi_lwk_checksum_method_mnemonic_word_count() != 61849) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -22709,10 +22562,10 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_psetdetails_balance() != 59666) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_psetdetails_fingerprints_has() != 6688) {
+    if (uniffi_lwk_checksum_method_psetdetails_fingerprints_has() != 51634) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_psetdetails_fingerprints_missing() != 9065) {
+    if (uniffi_lwk_checksum_method_psetdetails_fingerprints_missing() != 49280) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_psetdetails_has_non_default_sighash() != 50087) {
@@ -22913,6 +22766,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_txbuilder_add_reissuance() != 26747) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_lwk_checksum_method_txbuilder_allow_high_fee_rate() != 58527) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_lwk_checksum_method_txbuilder_drain_lbtc_to() != 34381) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -23003,7 +22859,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_txid_to_bytes() != 51573) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_unvalidatedliquidexproposal_insecure_validate() != 45940) {
+    if (uniffi_lwk_checksum_method_unvalidatedliquidexproposal_insecure_validate() != 47708) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_unvalidatedliquidexproposal_needed_tx() != 38170) {
@@ -23093,7 +22949,16 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_waterfallsclient_subscribe() != 62222) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_lwk_checksum_method_waterfallsclient_subscribe_reconnecting() != 63165) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_lwk_checksum_method_waterfallsclient_tip() != 38774) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_waterfallsreconnectingsubscription_close_subscription() != 35456) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_waterfallsreconnectingsubscription_next_update() != 54672) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_waterfallssubscription_close_subscription() != 52559) {
@@ -23105,7 +22970,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_lwk_checksum_method_wollet_add_details() != 42615) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_lwk_checksum_method_wollet_address() != 64900) {
+    if (uniffi_lwk_checksum_method_wollet_address() != 53597) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_wollet_apply_transaction() != 55817) {
@@ -23139,6 +23004,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_wollet_pset_details() != 3928) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_lwk_checksum_method_wollet_set_amp0_last_index() != 60764) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_method_wollet_transaction() != 42318) {
@@ -23319,15 +23187,6 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_constructor_logginglink_new() != 31235) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_lwk_checksum_constructor_lwktestenv_new() != 2775) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_lwk_checksum_constructor_lwktestenv_new_with_amp2() != 20610) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_lwk_checksum_constructor_lwkteststore_new() != 48161) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_lwk_checksum_constructor_mnemonic_from_entropy() != 36360) {
